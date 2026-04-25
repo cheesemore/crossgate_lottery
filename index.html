@@ -206,6 +206,12 @@
             document.getElementById('teamListSection').classList.remove('hidden');
         }
 
+        // 页面加载自动生成随机种子
+        window.addEventListener('load', () => {
+            const randomSeed = Date.now().toString() + Math.random().toString(36).substring(2, 8);
+            document.getElementById('hashSeed').value = randomSeed;
+        });
+
         // 生成按钮点击事件
         document.getElementById('generateBtn').addEventListener('click', () => {
             const seed = document.getElementById('hashSeed').value;
