@@ -273,17 +273,15 @@
             allRounds.forEach((round, roundIndex) => {
                 const roundDiv = document.createElement('div');
                 roundDiv.className = 'bracket-round';
-                // 轮次标题配色方案循环：浅灰→浅蓝→浅紫→浅橙→浅红→炫彩渐变
-                const colorSchemes = [
-                    { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-700' },
-                    { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
-                    { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' },
-                    { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700' },
-                    { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' },
-                ];
-                // 轮次循环使用5种配色，不需要炫彩
-                const scheme = colorSchemes[roundIndex % colorSchemes.length];
-                const titleClass = `${scheme.bg} ${scheme.border} ${scheme.text}`;
+                // 轮次标题配色：普通轮次浅蓝，半决赛浅紫，决赛浅橙
+                let titleClass;
+                if (round.type === '决赛') {
+                    titleClass = 'bg-orange-50 border border-orange-200 text-orange-700';
+                } else if (round.name.includes('半决赛')) {
+                    titleClass = 'bg-purple-50 border border-purple-200 text-purple-700';
+                } else {
+                    titleClass = 'bg-blue-50 border border-blue-200 text-blue-700';
+                }
                 roundDiv.innerHTML = `<h3 class="text-center font-bold text-lg mb-3 sticky top-0 py-2 px-4 z-10 rounded-lg border ${titleClass}">${round.name}</h3><div class="matches-wrapper"></div>`;
                 const matchesContainer = roundDiv.querySelector('.matches-wrapper');
                 round.matches.forEach((match, matchIndex) => {
