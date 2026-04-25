@@ -3,24 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>魔力宝贝青灯杯争霸赛 随机编号生成器</title>
+    <title>青灯杯争霸赛对阵图生成器</title>
 
     <!-- Open Graph核心标签（微信预览用） -->
     <meta property="og:type" content="website">
-    <meta property="og:title" content="魔力宝贝青灯杯争霸赛 随机编号生成器">
-    <meta property="og:description" content="24支队伍可验证公平随机编号生成，Fisher-Yates洗牌算法，结果可复现，无人工干预">
+    <meta property="og:title" content="青灯杯争霸赛对阵图生成器">
+    <meta property="og:description" content="24支队伍可验证公平随机对阵生成，Fisher-Yates洗牌算法，结果可复现，无人工干预">
     <meta property="og:url" content="https://cheesemore.github.io/molababy-tournament-bracket/">
     <meta property="og:image" content="https://cheesemore.github.io/molababy-tournament-bracket/share.jpg">
 
     <!-- 微信兼容标签 -->
-    <meta property="wx:title" content="魔力宝贝青灯杯争霸赛 随机编号生成器">
-    <meta property="wx:description" content="24支队伍可验证公平随机编号生成，Fisher-Yates洗牌算法，结果可复现，无人工干预">
+    <meta property="wx:title" content="青灯杯争霸赛对阵图生成器">
+    <meta property="wx:description" content="24支队伍可验证公平随机对阵生成，Fisher-Yates洗牌算法，结果可复现，无人工干预">
     <meta property="wx:image" content="https://cheesemore.github.io/molababy-tournament-bracket/share.jpg">
 
     <!-- Twitter兼容标签 -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="魔力宝贝青灯杯争霸赛 随机编号生成器">
-    <meta name="twitter:description" content="24支队伍可验证公平随机编号生成，Fisher-Yates洗牌算法，结果可复现，无人工干预">
+    <meta name="twitter:title" content="青灯杯争霸赛对阵图生成器">
+    <meta name="twitter:description" content="24支队伍可验证公平随机对阵生成，Fisher-Yates洗牌算法，结果可复现，无人工干预">
     <meta name="twitter:image" content="https://cheesemore.github.io/molababy-tournament-bracket/share.jpg">
 
     <!-- Favicon图标 -->
@@ -75,8 +75,8 @@
     <div class="max-w-[95%] mx-auto max-w-8xl">
         <!-- 头部 -->
         <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-blue-800 mb-3">🏆 魔力宝贝青灯杯争霸赛 随机编号生成器</h1>
-            <p class="text-gray-600 text-lg">基于SHA256哈希可验证、公平Fisher-Yates随机洗牌</p>
+            <h1 class="text-4xl font-bold text-blue-800 mb-3">🏆 青灯杯争霸赛对阵图生成器</h1>
+            <p class="text-gray-600 text-lg">基于SHA256哈希可验证、公平Fisher-Yates随机洗牌，24支队伍公平对阵生成</p>
             <div class="mt-2 text-sm text-gray-500">V1.0.0</div>
         </div>
 
@@ -84,15 +84,15 @@
         <div class="bg-white rounded-2xl shadow-xl p-8 mb-10">
             <div class="grid md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">🔑 输入哈希种子（相同种子生成完全相同的编号）</label>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">🔑 输入哈希种子（相同种子生成完全相同的对阵）</label>
                     <input type="text" id="hashSeed" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono" placeholder="输入任意哈希值/字符串，留空则自动随机生成">
                 </div>
                 <div class="flex items-end">
-                    <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all">🎲 生成随机编号</button>
+                    <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all">🎲 生成随机对阵</button>
                 </div>
             </div>
             <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p class="text-sm text-yellow-700">💡 提示：使用相同的哈希种子每次都会生成完全一致的编号分配，可复现、不可篡改，符合区块链抽签逻辑</p>
+                <p class="text-sm text-yellow-700">💡 提示：使用相同的哈希种子每次都会生成完全一致的对阵分配，可复现、不可篡改，符合区块链抽签逻辑</p>
             </div>
         </div>
 
@@ -104,9 +104,9 @@
             </div>
         </div>
 
-        <!-- 随机编号结果区 -->
+        <!-- 随机对阵结果区 -->
         <div class="bg-white rounded-2xl shadow-xl p-8 mb-10 hidden" id="resultSection">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">🎫 队伍随机编号分配结果</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">🎫 队伍随机对阵分配结果</h2>
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3" id="numList">
                 <!-- 动态生成编号对应列表 -->
             </div>
@@ -123,10 +123,10 @@
         <div class="bg-white rounded-2xl shadow-xl p-6 mb-10">
             <h3 class="text-xl font-bold text-gray-800 mb-4">📝 算法说明</h3>
             <ul class="list-disc list-inside space-y-2 text-gray-700">
-                <li>采用Fisher-Yates洗牌算法，保证每个编号分配概率完全均匀</li>
-                <li>随机种子支持自定义，相同种子永远生成完全相同的编号顺序，结果可复现、可验证，杜绝黑幕</li>
+                <li>采用Fisher-Yates洗牌算法，保证每个对阵分配概率完全均匀</li>
+                <li>随机种子支持自定义，相同种子永远生成完全相同的对阵顺序，结果可复现、可验证，杜绝黑幕</li>
                 <li>底层采用标准SHA256哈希算法驱动随机数生成，符合区块链可验证随机数规范</li>
-                <li>24支队伍获取编号完全公平，无任何人工干预可能</li>
+                <li>24支队伍对阵分配完全公平，无任何人工干预可能</li>
             </ul>
         </div>
     </div>
