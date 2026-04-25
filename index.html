@@ -119,7 +119,7 @@
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-blue-800 mb-3">🏆 青灯杯争霸赛对阵图生成器</h1>
             <p class="text-gray-600 text-lg">基于SHA256哈希可验证、公平Fisher-Yates随机洗牌，24支队伍公平对阵生成</p>
-            <div class="mt-2 text-sm text-gray-500">V1.1.0</div>
+            <div class="mt-2 text-sm text-gray-500">V1.1.1</div>
         </div>
 
         <!-- 操作区 -->
@@ -436,7 +436,6 @@
                     });
                 }
                 // 胜者组轮次名称
-                const winnerRoundNum = winnerRounds.length;
                 let winnerRoundName;
                 if (isSemiFinalWinner) {
                     winnerRoundName = `半决赛 胜者组 ${sortedWinners.length}进${Math.ceil(sortedWinners.length/2)}`;
@@ -486,7 +485,6 @@
                         });
                     }
                     // 败者组轮次名称
-                    const loserRoundNum = loserRounds.length + 1;
                     let loserRoundName;
                     if (isSemiFinalLoser) {
                         loserRoundName = `半决赛 败者组 ${nextLoserTeams.length}进${Math.ceil(nextLoserTeams.length/2)}`;
