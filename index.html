@@ -116,7 +116,7 @@
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-blue-800 mb-3">🏆 青灯杯争霸赛对阵图生成器</h1>
             <p class="text-gray-600 text-lg">基于SHA256哈希可验证、公平Fisher-Yates随机洗牌，24支队伍公平对阵生成</p>
-            <div class="mt-2 text-sm text-gray-500">V1.1.2</div>
+            <div class="mt-2 text-sm text-gray-500">V1.1.3</div>
         </div>
 
         <!-- 操作区 -->
@@ -263,6 +263,150 @@
             }
         }
 
+        // 生成下一轮对阵
+        function generateNextRound() {
+            // 检查是不是已经到决赛了
+            const hasFinal = allRounds.some(r => r.type === '决赛');
+            if (hasFinal) return;
+            // 收集最新一轮的胜者组和败者组
+            const winnerRounds = allRounds.filter(r => r.type === '胜者组' || r.type === '首轮');
+            const loserRounds = allRounds.filter(r => r.type === '败者组');
+            const latestWinnerRound = winnerRounds[winnerRounds.length - 1];
+            const latestLoserRound = loserRounds[loserRounds.length - 1];
+            // 胜者组胜者
+            const winnerWinners = latestWinnerRound.matches.map(m => m.team2 === null ? m.team1 : m.winner);
+            // 败者组胜者
+            let loserWinners = [];
+            if (latestLoserRound) {
+                loserWinners = latestLoserRound.matches.map(m => m.team2 === null ? m.team1 : m.winner);
+            }
+            // 合并败者组胜者和败者池，作为下一轮败者组参赛队伍
+            const nextLoserTeams = [...loserWinners, ...loserPool].sort((a,b) => a - b);
+            loserPool = []; // 清空败者池
+            // 生成下一轮胜者组对阵
+            const sortedWinners = winnerWinners.sort((a,b) => a - b);
+            // 如果只剩2个，打决赛
+            if (sortedWinners.length === 2 && nextLoserTeams.length === 0) {
+                allRounds.push({
+                    name: '决赛 BO3',
+                    type: '决赛',
+                    matches: [{
+                        team1: sortedWinners[0],
+                        team2: sortedWinners[1],
+                        winner: null,
+                        type: '决赛'
+                    }]
+                });
+                return;
+            }
+            // 如果胜者组只剩1个，败者组只剩1个，打决赛
+            if (sortedWinners.length === 1 && nextLoserTeams.length === 1) {
+                allRounds.push({
+                    name: '决赛 BO3',
+                    type: '决赛',
+                    matches: [{
+                        team1: sortedWinners[0],
+                        team2: nextLoserTeams[0],
+                        winner: null,
+                        type: '决赛'
+                    }]
+                });
+                return;
+            }
+            // 生成下一轮胜者组对阵
+            const winnerRoundNum = winnerRounds.length;
+            let nextWinnerMatches = [];
+            const isSemiFinalWinner = sortedWinners.length <= 3;
+            // 处理轮空：用衍生种子随机选择轮空队伍，保证可复现
+            if (sortedWinners.length % 2 !== 0) {
+                // 生成当前轮次专属衍生种子：初始种子 + 轮次序号 + winner标识，和败者组区分开
+                const roundSeed = stringToSeed(`${globalSeed}${winnerRoundNum}winner`);
+                const random = seededRandom(roundSeed);
+                const randomIndex = Math.floor(random() * sortedWinners.length) % sortedWinners.length;
+                const byeTeam = sortedWinners.splice(randomIndex, 1)[0];
+                // 轮空加对应积分
+                if (isSemiFinalWinner) {
+                    teamsMap[byeTeam].score += 2; // 半决赛轮空+2分
+                } else {
+                    teamsMap[byeTeam].score += 3; // 胜者组轮空胜+3分
+                }
+                nextWinnerMatches.push({
+                    team1: byeTeam,
+                    team2: null,
+                    winner: byeTeam,
+                    type: '轮空'
+                });
+            }
+            // 剩下的偶数个队伍两两配对
+            let i = 0;
+            for (; i < sortedWinners.length; i += 2) {
+                nextWinnerMatches.push({
+                    team1: sortedWinners[i],
+                    team2: sortedWinners[i+1],
+                    winner: null,
+                    type: '胜者组'
+                });
+            }
+            // 胜者组轮次名称
+            let winnerRoundName;
+            if (isSemiFinalWinner) {
+                winnerRoundName = `半决赛 胜者组 ${sortedWinners.length}进${Math.ceil(sortedWinners.length/2)}`;
+            } else {
+                winnerRoundName = `胜者组第${winnerRoundNum}轮 ${sortedWinners.length}进${Math.ceil(sortedWinners.length/2)}`;
+            }
+            // 添加胜者组下一轮
+            if (nextWinnerMatches.length > 0 || sortedWinners.length > 0) {
+                allRounds.push({
+                    name: winnerRoundName,
+                    type: '胜者组',
+                    matches: nextWinnerMatches
+                });
+            }
+            // 生成下一轮败者组对阵
+            if (nextLoserTeams.length > 0) {
+                const loserRoundNum = loserRounds.length + 1;
+                const nextLoserMatches = [];
+                const isSemiFinalLoser = nextLoserTeams.length <=3;
+                // 处理轮空：用衍生种子随机选择轮空队伍，保证可复现
+                if (nextLoserTeams.length % 2 !== 0) {
+                    // 生成当前轮次专属衍生种子：初始种子 + 轮次序号 + loser标识，和胜者组区分开
+                    const roundSeed = stringToSeed(`${globalSeed}${loserRoundNum}loser`);
+                    const random = seededRandom(roundSeed);
+                    const randomIndex = Math.floor(random() * nextLoserTeams.length) % nextLoserTeams.length;
+                    const byeTeam = nextLoserTeams.splice(randomIndex, 1)[0];
+                    teamsMap[byeTeam].score += 2; // 败者组轮空胜+2分
+                    nextLoserMatches.push({
+                        team1: byeTeam,
+                        team2: null,
+                        winner: byeTeam,
+                        type: '轮空'
+                    });
+                }
+                // 剩下的偶数个队伍两两配对
+                let j = 0;
+                for (; j < nextLoserTeams.length; j += 2) {
+                    nextLoserMatches.push({
+                        team1: nextLoserTeams[j],
+                        team2: nextLoserTeams[j+1],
+                        winner: null,
+                        type: '败者组'
+                    });
+                }
+                // 败者组轮次名称
+                let loserRoundName;
+                if (isSemiFinalLoser) {
+                    loserRoundName = `半决赛 败者组 ${nextLoserTeams.length}进${Math.ceil(nextLoserTeams.length/2)}`;
+                } else {
+                    loserRoundName = `败者组第${loserRoundNum}轮 ${nextLoserTeams.length}进${Math.ceil(nextLoserTeams.length/2)}`;
+                }
+                allRounds.push({
+                    name: loserRoundName,
+                    type: '败者组',
+                    matches: nextLoserMatches
+                });
+            }
+        }
+
         // 渲染所有轮次对阵
         function renderAllRounds() {
             const container = document.getElementById('roundsContainer');
@@ -344,149 +488,7 @@
                 return round.matches.every(m => m.winner !== null || m.team2 === null);
             });
             if (allMatchesFinished && allRounds.length > 0) {
-                // 检查是不是已经到决赛了
-                const hasFinal = allRounds.some(r => r.type === '决赛');
-                if (hasFinal) return;
-                // 收集最新一轮的胜者组和败者组
-                const winnerRounds = allRounds.filter(r => r.type === '胜者组' || r.type === '首轮');
-                const loserRounds = allRounds.filter(r => r.type === '败者组');
-                const latestWinnerRound = winnerRounds[winnerRounds.length - 1];
-                const latestLoserRound = loserRounds[loserRounds.length - 1];
-                // 胜者组胜者
-                const winnerWinners = latestWinnerRound.matches.map(m => m.team2 === null ? m.team1 : m.winner);
-                // 败者组胜者
-                let loserWinners = [];
-                if (latestLoserRound) {
-                    loserWinners = latestLoserRound.matches.map(m => m.team2 === null ? m.team1 : m.winner);
-                }
-                // 合并败者组胜者和败者池，作为下一轮败者组参赛队伍
-                const nextLoserTeams = [...loserWinners, ...loserPool].sort((a,b) => a - b);
-                loserPool = []; // 清空败者池
-                // 生成下一轮胜者组对阵
-                const sortedWinners = winnerWinners.sort((a,b) => a - b);
-                // 如果只剩2个，打决赛
-                if (sortedWinners.length === 2 && nextLoserTeams.length === 0) {
-                    allRounds.push({
-                        name: '决赛 BO3',
-                        type: '决赛',
-                        matches: [{
-                            team1: sortedWinners[0],
-                            team2: sortedWinners[1],
-                            winner: null,
-                            type: '决赛'
-                        }]
-                    });
-                    renderAllRounds();
-                    return;
-                }
-                // 如果胜者组只剩1个，败者组只剩1个，打决赛
-                if (sortedWinners.length === 1 && nextLoserTeams.length === 1) {
-                    allRounds.push({
-                        name: '决赛 BO3',
-                        type: '决赛',
-                        matches: [{
-                            team1: sortedWinners[0],
-                            team2: nextLoserTeams[0],
-                            winner: null,
-                            type: '决赛'
-                        }]
-                    });
-                    renderAllRounds();
-                    return;
-                }
-                // 生成下一轮胜者组对阵
-                const winnerRoundNum = winnerRounds.length;
-                let nextWinnerMatches = [];
-                const isSemiFinalWinner = sortedWinners.length <= 3;
-                // 处理轮空：用衍生种子随机选择轮空队伍，保证可复现
-                if (sortedWinners.length % 2 !== 0) {
-                    // 生成当前轮次专属衍生种子：初始种子 + 轮次序号 + winner标识，和败者组区分开
-                    const roundSeed = stringToSeed(`${globalSeed}${winnerRoundNum}winner`);
-                    const random = seededRandom(roundSeed);
-                    const randomIndex = Math.floor(random() * sortedWinners.length) % sortedWinners.length;
-                    const byeTeam = sortedWinners.splice(randomIndex, 1)[0];
-                    // 轮空加对应积分
-                    if (isSemiFinalWinner) {
-                        teamsMap[byeTeam].score += 2; // 半决赛轮空+2分
-                    } else {
-                        teamsMap[byeTeam].score += 3; // 胜者组轮空胜+3分
-                    }
-                    nextWinnerMatches.push({
-                        team1: byeTeam,
-                        team2: null,
-                        winner: byeTeam,
-                        type: '轮空'
-                    });
-                }
-                // 剩下的偶数个队伍两两配对
-                let i = 0;
-                for (; i < sortedWinners.length; i += 2) {
-                    nextWinnerMatches.push({
-                        team1: sortedWinners[i],
-                        team2: sortedWinners[i+1],
-                        winner: null,
-                        type: '胜者组'
-                    });
-                }
-                // 胜者组轮次名称
-                let winnerRoundName;
-                if (isSemiFinalWinner) {
-                    winnerRoundName = `半决赛 胜者组 ${sortedWinners.length}进${Math.ceil(sortedWinners.length/2)}`;
-                } else {
-                    winnerRoundName = `胜者组第${winnerRoundNum}轮 ${sortedWinners.length}进${Math.ceil(sortedWinners.length/2)}`;
-                }
-                // 添加胜者组下一轮
-                if (nextWinnerMatches.length > 0 || sortedWinners.length > 0) {
-                    allRounds.push({
-                        name: winnerRoundName,
-                        type: '胜者组',
-                        matches: nextWinnerMatches
-                    });
-                }
-                // 生成下一轮败者组对阵
-                if (nextLoserTeams.length > 0) {
-                    const loserRoundNum = loserRounds.length + 1;
-                    const nextLoserMatches = [];
-                    const isSemiFinalLoser = nextLoserTeams.length <=3;
-                    // 处理轮空：用衍生种子随机选择轮空队伍，保证可复现
-                    if (nextLoserTeams.length % 2 !== 0) {
-                        // 生成当前轮次专属衍生种子：初始种子 + 轮次序号 + loser标识，和胜者组区分开
-                        const roundSeed = stringToSeed(`${globalSeed}${loserRoundNum}loser`);
-                        const random = seededRandom(roundSeed);
-                        const randomIndex = Math.floor(random() * nextLoserTeams.length) % nextLoserTeams.length;
-                        const byeTeam = nextLoserTeams.splice(randomIndex, 1)[0];
-                        teamsMap[byeTeam].score += 2; // 败者组轮空胜+2分
-                        nextLoserMatches.push({
-                            team1: byeTeam,
-                            team2: null,
-                            winner: byeTeam,
-                            type: '轮空'
-                        });
-                    }
-                    // 剩下的偶数个队伍两两配对
-                    let j = 0;
-                    for (; j < nextLoserTeams.length; j += 2) {
-                        nextLoserMatches.push({
-                            team1: nextLoserTeams[j],
-                            team2: nextLoserTeams[j+1],
-                            winner: null,
-                            type: '败者组'
-                        });
-                    }
-                    // 败者组轮次名称
-                    let loserRoundName;
-                    if (isSemiFinalLoser) {
-                        loserRoundName = `半决赛 败者组 ${nextLoserTeams.length}进${Math.ceil(nextLoserTeams.length/2)}`;
-                    } else {
-                        loserRoundName = `败者组第${loserRoundNum}轮 ${nextLoserTeams.length}进${Math.ceil(nextLoserTeams.length/2)}`;
-                    }
-                    allRounds.push({
-                        name: loserRoundName,
-                        type: '败者组',
-                        matches: nextLoserMatches
-                    });
-                }
-                // 重新渲染新的轮次
+                generateNextRound();
                 renderAllRounds();
             }
         }
