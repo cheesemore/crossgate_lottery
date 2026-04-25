@@ -200,6 +200,7 @@
         let teamsMap = {}; // 编号→{name: 队名, score: 积分, eliminated: 是否淘汰}
         let allRounds = []; // 所有轮次数据：[{name: 轮次名, type: 类型, matches: [对阵列表]}]
         let loserPool = []; // 待进入败者组的队伍
+        let globalSeed = 0; // 全局初始种子，用于生成每一轮的衍生种子
 
         // 基于字符串生成随机种子的伪随机数生成器
         function stringToSeed(str) {
@@ -391,9 +392,15 @@
                 let nextWinnerMatches = [];
                 let i = 0;
                 const isSemiFinalWinner = sortedWinners.length <= 3;
-                // 处理轮空
+                // 处理轮空：用衍生种子随机选择轮空队伍，保证可复现
                 if (sortedWinners.length % 2 !== 0) {
-                    const byeTeam = sortedWinners[0];
+                    // 生成当前轮次专属衍生种子：初始种子 + 轮次序号，和败者组区分开
+                    const roundSeed = stringToSeed(globalSeed.toString() + winnerRoundNum.toString() + 'winner');
+                    const random = seededRandom(roundSeed);
+                    const randomIndex = Math.floor(random() * sortedWinners.length);
+                    const byeTeam = sortedWinners[randomIndex];
+                    // 从列表中移除轮空队伍，剩下的继续配对
+                    sortedWinners.splice(randomIndex, 1);
                     // 轮空加对应积分
                     if (isSemiFinalWinner) {
                         teamsMap[byeTeam].score += 2; // 半决赛轮空+2分
@@ -406,7 +413,7 @@
                         winner: byeTeam,
                         type: '轮空'
                     });
-                    i = 1;
+                    i = 0;
                 }
                 // 两两配对
                 for (; i < sortedWinners.length; i += 2) {
@@ -438,9 +445,15 @@
                     const nextLoserMatches = [];
                     let j = 0;
                     const isSemiFinalLoser = nextLoserTeams.length <=3;
-                    // 处理轮空
+                    // 处理轮空：用衍生种子随机选择轮空队伍，保证可复现
                     if (nextLoserTeams.length % 2 !== 0) {
-                        const byeTeam = nextLoserTeams[0];
+                        // 生成当前轮次专属衍生种子：初始种子 + 轮次序号 + loser标识，和胜者组区分开
+                        const roundSeed = stringToSeed(globalSeed.toString() + loserRoundNum.toString() + 'loser');
+                        const random = seededRandom(roundSeed);
+                        const randomIndex = Math.floor(random() * nextLoserTeams.length);
+                        const byeTeam = nextLoserTeams[randomIndex];
+                        // 从列表中移除轮空队伍，剩下的继续配对
+                        nextLoserTeams.splice(randomIndex, 1);
                         teamsMap[byeTeam].score += 2; // 败者组轮空胜+2分
                         nextLoserMatches.push({
                             team1: byeTeam,
@@ -448,7 +461,7 @@
                             winner: byeTeam,
                             type: '轮空'
                         });
-                        j = 1;
+                        j = 0;
                     }
                     // 两两配对
                     for (; j < nextLoserTeams.length; j += 2) {
@@ -530,6 +543,7 @@
                 document.getElementById('hashSeed').value = seed;
             }
             const numericSeed = stringToSeed(seed);
+            globalSeed = numericSeed; // 保存全局初始种子，用于后续衍生种子生成
             // 生成1-24的数字数组，并用Fisher-Yates洗牌打乱，可复现
             const numbers = Array.from({length:24}, (_,i)=>i+1);
             const shuffledNums = shuffleArray(numbers, numericSeed);
