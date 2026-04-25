@@ -348,8 +348,8 @@
                 });
                 return true;
             }
-            // 2. 败者组打完只剩1人：生成4人半决赛对阵
-            if (sortedWinners.length === 3 && nextLoserTeams.length === 1) {
+            // 2. 败者组打完只剩1人：生成4人半决赛对阵（仅当还没有半决赛/决赛时生成，避免重复）
+            if (sortedWinners.length === 3 && nextLoserTeams.length === 1 && !allRounds.some(r => r.type === '半决赛' || r.type === '决赛')) {
                 const loserChampion = nextLoserTeams[0];
                 // 从3名胜者组选1人对阵败者组冠军
                 let matchLoserIndex = 0;
