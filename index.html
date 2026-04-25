@@ -116,7 +116,7 @@
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-blue-800 mb-3">🏆 青灯杯争霸赛对阵图生成器</h1>
             <p class="text-gray-600 text-lg">基于SHA256哈希可验证、公平Fisher-Yates随机洗牌，24支队伍公平对阵生成</p>
-            <div class="mt-2 text-sm text-gray-500">V1.2.1</div>
+            <div class="mt-2 text-sm text-gray-500">V1.3.0</div>
         </div>
 
         <!-- 操作区 -->
@@ -474,31 +474,64 @@
                     const matchCard = document.createElement('div');
                     matchCard.className = `match-card bg-white border border-gray-200 rounded-lg p-4 shadow-sm ${isFinished ? 'opacity-75' : ''}`;
                     if (!isFinished) {
-                        matchCard.innerHTML = `
-                            <div class="pb-3 border-b border-gray-100">
-                                <span>${team1Name} (${match.team1}号)</span>
-                            </div>
-                            <div class="py-1 text-center text-gray-400 text-sm vs-text">VS</div>
-                            <div class="pt-3">
-                                <span>${team2Name} (${match.team2}号)</span>
-                            </div>
-                            <div class="mt-3 pt-3 border-t border-gray-200 grid grid-cols-2 gap-2">
-                                <button class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded" 
-                                        onclick="handleMatchWin(${roundIndex}, ${matchIndex}, ${match.team1})">
-                                    ${team1Name} 胜
-                                </button>
-                                <button class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded" 
-                                        onclick="handleMatchWin(${roundIndex}, ${matchIndex}, ${match.team2})">
-                                    ${team2Name} 胜
-                                </button>
-                            </div>
-                        `;
+                        const isBO3 = round.name.includes('半决赛') || round.type === '决赛';
+                        if (isBO3) {
+                            // BO3比赛：显示比分选项
+                            matchCard.innerHTML = `
+                                <div class="pb-3 border-b border-gray-100">
+                                    <span>${team1Name} (${match.team1}号)</span>
+                                </div>
+                                <div class="py-1 text-center text-gray-400 text-sm vs-text">BO3</div>
+                                <div class="pt-3">
+                                    <span>${team2Name} (${match.team2}号)</span>
+                                </div>
+                                <div class="mt-3 pt-3 border-t border-gray-200 grid grid-cols-2 gap-2">
+                                    <button class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-1 rounded" 
+                                            onclick="handleMatchWin(${roundIndex}, ${matchIndex}, ${match.team1}, 2, 0)">
+                                        ${team1Name} 2:0 胜
+                                    </button>
+                                    <button class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-1 rounded" 
+                                            onclick="handleMatchWin(${roundIndex}, ${matchIndex}, ${match.team1}, 2, 1)">
+                                        ${team1Name} 2:1 胜
+                                    </button>
+                                    <button class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-1 rounded" 
+                                            onclick="handleMatchWin(${roundIndex}, ${matchIndex}, ${match.team2}, 2, 0)">
+                                        ${team2Name} 2:0 胜
+                                    </button>
+                                    <button class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-1 rounded" 
+                                            onclick="handleMatchWin(${roundIndex}, ${matchIndex}, ${match.team2}, 2, 1)">
+                                        ${team2Name} 2:1 胜
+                                    </button>
+                                </div>
+                            `;
+                        } else {
+                            // BO1比赛：原来的胜负按钮
+                            matchCard.innerHTML = `
+                                <div class="pb-3 border-b border-gray-100">
+                                    <span>${team1Name} (${match.team1}号)</span>
+                                </div>
+                                <div class="py-1 text-center text-gray-400 text-sm vs-text">VS</div>
+                                <div class="pt-3">
+                                    <span>${team2Name} (${match.team2}号)</span>
+                                </div>
+                                <div class="mt-3 pt-3 border-t border-gray-200 grid grid-cols-2 gap-2">
+                                    <button class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded" 
+                                            onclick="handleMatchWin(${roundIndex}, ${matchIndex}, ${match.team1}, 1, 0)">
+                                        ${team1Name} 胜
+                                    </button>
+                                    <button class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded" 
+                                            onclick="handleMatchWin(${roundIndex}, ${matchIndex}, ${match.team2}, 1, 0)">
+                                        ${team2Name} 胜
+                                    </button>
+                                </div>
+                            `;
+                        }
                     } else {
                         matchCard.innerHTML = `
                             <div class="pb-3 border-b border-gray-100">
                                 <span class="${match.winner === match.team1 ? 'winner-text' : 'loser-text'}">${team1Name} (${match.team1}号)</span>
                             </div>
-                            <div class="py-1 text-center text-gray-400 text-sm vs-text">VS</div>
+                            <div class="py-1 text-center text-gray-400 text-sm vs-text">${match.winCount}:${match.loseCount}</div>
                             <div class="pt-3">
                                 <span class="${match.winner === match.team2 ? 'winner-text' : 'loser-text'}">${team2Name} (${match.team2}号)</span>
                             </div>
@@ -516,25 +549,27 @@
         }
 
         // 处理比赛胜负
-        function handleMatchWin(roundIndex, matchIndex, winnerNum) {
+        function handleMatchWin(roundIndex, matchIndex, winnerNum, winCount, loseCount) {
             const round = allRounds[roundIndex];
             const match = round.matches[matchIndex];
             if (match.winner !== null || match.team2 === null) return; // 已经结束或轮空的比赛不能改
             match.winner = winnerNum;
+            match.winCount = winCount;
+            match.loseCount = loseCount;
             const loserNum = match.team1 === winnerNum ? match.team2 : match.team1;
             // 计算积分
             const roundType = round.type;
             const isSemiFinal = round.name.includes('半决赛');
             const isFinal = round.type === '决赛';
             if (isFinal) {
-                // 决赛
-                teamsMap[winnerNum].score += 3;
-                teamsMap[loserNum].score += 2;
+                // 决赛BO3：每赢一场+3分，每输一场+2分
+                teamsMap[winnerNum].score += winCount * 3;
+                teamsMap[loserNum].score += loseCount * 2;
                 teamsMap[loserNum].eliminated = true;
             } else if (isSemiFinal) {
-                // 半决赛BO3
-                teamsMap[winnerNum].score += 2;
-                teamsMap[loserNum].score += 1;
+                // 半决赛BO3：每赢一场+2分，每输一场+1分
+                teamsMap[winnerNum].score += winCount * 2;
+                teamsMap[loserNum].score += loseCount * 1;
                 if (roundType === '胜者组') {
                     // 胜者组半决赛败者掉败者组
                     teamsMap[loserNum].eliminated = false;
@@ -544,13 +579,14 @@
                     teamsMap[loserNum].eliminated = true;
                 }
             } else {
-                // 常规轮次
+                // 常规BO1轮次
                 if (roundType === '胜者组' || roundType === '首轮') {
                     teamsMap[winnerNum].score += 3;
                     teamsMap[loserNum].score += 1;
                     loserPool.push(loserNum); // 败者掉入败者池
                     teamsMap[loserNum].eliminated = false;
                 } else {
+                    // 败者组BO1：赢+2，输淘汰+0
                     teamsMap[winnerNum].score += 2;
                     teamsMap[loserNum].eliminated = true; // 败者组败者直接淘汰
                 }
