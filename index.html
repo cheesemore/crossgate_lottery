@@ -18,12 +18,33 @@
             flex-direction: column;
             justify-content: flex-start;
             gap: 0.5rem;
-            min-width: 180px;
-            flex-shrink: 0;
+            width: 100%;
         }
         .bracket-round h3 {
-            font-size: 0.9rem;
+            font-size: 1rem;
             margin-bottom: 0.5rem;
+            background: #eff6ff !important;
+            padding: 0.5rem !important;
+            border-radius: 0.5rem;
+        }
+        /* 同轮次比赛横向排列自动换行 */
+        .matches-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            width: 100%;
+        }
+        .match-card {
+            width: calc(25% - 0.6rem); /* 每行默认放4场比赛 */
+            min-width: 200px;
+            flex-shrink: 0;
+        }
+        /* 移动端适配每行放2场 */
+        @media (max-width: 768px) {
+            .match-card {
+                width: calc(50% - 0.4rem);
+                min-width: auto;
+            }
         }
         .winner-text {
             font-weight: bold;
@@ -136,8 +157,8 @@
         <!-- 赛事对阵流程区 -->
         <div class="bg-white rounded-2xl shadow-xl p-8 mb-10 hidden" id="tournamentSection">
             <h2 class="text-2xl font-bold text-gray-800 mb-6">⚔️ 赛事对阵流程</h2>
-            <div class="flex overflow-x-auto pb-4 gap-8" id="roundsContainer">
-                <!-- 动态生成每一轮的对阵 -->
+            <div class="flex flex-col gap-6 w-full" id="roundsContainer">
+                <!-- 动态生成每一轮的对阵，从上向下扩展 -->
             </div>
         </div>
 
@@ -172,12 +193,9 @@
             "★", "泡", "通辽李先生1", "喵喵1", "栩哥 巫师", "ゞ。朝花夕拾",
             "岁月如歌", "抠脚大汉", "小书童1", "云坚雨", "大老粗", "阿卡曼1"
         ];
-        const cardEl = document.getElementById('card');
         const drawBtn = document.getElementById('generateBtn');
-        const cardImg = document.getElementById('cardImg');
         let isDrawing = false;
         let hasDrawn = false;
-        let lastDrawnCard = null; // 记录上一次抽到的卡，避免连续重复
         // 赛事全局状态
         let teamsMap = {}; // 编号→{name: 队名, score: 积分, eliminated: 是否淘汰}
         let allRounds = []; // 所有轮次数据：[{name: 轮次名, type: 类型, matches: [对阵列表]}]
@@ -253,32 +271,33 @@
             container.innerHTML = '';
             allRounds.forEach((round, roundIndex) => {
                 const roundDiv = document.createElement('div');
-                roundDiv.className = 'bracket-round min-w-[250px] flex-shrink-0';
-                roundDiv.innerHTML = `<h3 class="text-center font-bold text-lg text-blue-700 mb-4 sticky top-0 bg-white py-2 z-10 rounded-lg">${round.name}</h3>`;
+                roundDiv.className = 'bracket-round';
+                roundDiv.innerHTML = `<h3 class="text-center font-bold text-lg text-blue-700 mb-3 sticky top-0 bg-white py-2 z-10 rounded-lg">${round.name}</h3><div class="matches-wrapper"></div>`;
+                const matchesContainer = roundDiv.querySelector('.matches-wrapper');
                 round.matches.forEach((match, matchIndex) => {
                     // 处理轮空的情况
                     if (match.team2 === null) {
                         const matchCard = document.createElement('div');
-                        matchCard.className = 'match-card bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-sm mb-4';
+                        matchCard.className = 'match-card bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-sm';
                         matchCard.innerHTML = `
                             <div class="text-center font-bold text-yellow-700 mb-2">轮空直接晋级</div>
                             <div class="text-center text-lg font-medium">${teamsMap[match.team1].name} (${match.team1}号)</div>
                             <div class="mt-2 text-sm text-center text-green-700 font-bold">自动获得晋级资格</div>
                         `;
-                        roundDiv.appendChild(matchCard);
+                        matchesContainer.appendChild(matchCard);
                         return;
                     }
                     const team1Name = teamsMap[match.team1].name;
                     const team2Name = teamsMap[match.team2].name;
                     const isFinished = match.winner !== null;
                     const matchCard = document.createElement('div');
-                    matchCard.className = `match-card bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-4 ${isFinished ? 'opacity-75' : ''}`;
+                    matchCard.className = `match-card bg-white border border-gray-200 rounded-lg p-4 shadow-sm ${isFinished ? 'opacity-75' : ''}`;
                     if (!isFinished) {
                         matchCard.innerHTML = `
                             <div class="pb-3 border-b border-gray-100">
                                 <span>${team1Name} (${match.team1}号)</span>
                             </div>
-                            <div class="py-1 text-center text-gray-400 text-sm">VS</div>
+                            <div class="py-1 text-center text-gray-400 text-sm vs-text">VS</div>
                             <div class="pt-3">
                                 <span>${team2Name} (${match.team2}号)</span>
                             </div>
@@ -298,7 +317,7 @@
                             <div class="pb-3 border-b border-gray-100">
                                 <span class="${match.winner === match.team1 ? 'winner-text' : 'loser-text'}">${team1Name} (${match.team1}号)</span>
                             </div>
-                            <div class="py-1 text-center text-gray-400 text-sm">VS</div>
+                            <div class="py-1 text-center text-gray-400 text-sm vs-text">VS</div>
                             <div class="pt-3">
                                 <span class="${match.winner === match.team2 ? 'winner-text' : 'loser-text'}">${team2Name} (${match.team2}号)</span>
                             </div>
@@ -307,7 +326,7 @@
                             </div>
                         `;
                     }
-                    roundDiv.appendChild(matchCard);
+                    matchesContainer.appendChild(matchCard);
                 });
                 container.appendChild(roundDiv);
             });
@@ -336,7 +355,7 @@
                 // 合并败者组胜者和败者池，作为下一轮败者组参赛队伍
                 const nextLoserTeams = [...loserWinners, ...loserPool].sort((a,b) => a - b);
                 loserPool = []; // 清空败者池
-                // 生成下一轮胜者组
+                // 生成下一轮胜者组对阵
                 const sortedWinners = winnerWinners.sort((a,b) => a - b);
                 // 如果只剩2个，打决赛
                 if (sortedWinners.length === 2 && nextLoserTeams.length === 0) {
