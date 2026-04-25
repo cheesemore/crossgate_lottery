@@ -413,10 +413,12 @@
                     // 生成当前轮次专属衍生种子：初始种子 + 轮次序号，和败者组区分开
                     const roundSeed = stringToSeed(globalSeed.toString() + winnerRoundNum.toString() + 'winner');
                     const random = seededRandom(roundSeed);
-                    const randomIndex = Math.floor(random() * sortedWinners.length);
+                    const randomIndex = Math.max(0, Math.min(Math.floor(random() * sortedWinners.length), sortedWinners.length - 1));
                     const byeTeam = sortedWinners[randomIndex];
                     // 从列表中移除轮空队伍，剩下的继续配对
                     sortedWinners.splice(randomIndex, 1);
+                    // 保持排序
+                    sortedWinners.sort((a,b) => a - b);
                     // 轮空加对应积分
                     if (isSemiFinalWinner) {
                         teamsMap[byeTeam].score += 2; // 半决赛轮空+2分
@@ -466,10 +468,12 @@
                         // 生成当前轮次专属衍生种子：初始种子 + 轮次序号 + loser标识，和胜者组区分开
                         const roundSeed = stringToSeed(globalSeed.toString() + loserRoundNum.toString() + 'loser');
                         const random = seededRandom(roundSeed);
-                        const randomIndex = Math.floor(random() * nextLoserTeams.length);
+                        const randomIndex = Math.max(0, Math.min(Math.floor(random() * nextLoserTeams.length), nextLoserTeams.length - 1));
                         const byeTeam = nextLoserTeams[randomIndex];
                         // 从列表中移除轮空队伍，剩下的继续配对
                         nextLoserTeams.splice(randomIndex, 1);
+                        // 保持排序
+                        nextLoserTeams.sort((a,b) => a - b);
                         teamsMap[byeTeam].score += 2; // 败者组轮空胜+2分
                         nextLoserMatches.push({
                             team1: byeTeam,
