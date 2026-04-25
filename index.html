@@ -23,7 +23,6 @@
         .bracket-round h3 {
             font-size: 1rem;
             margin-bottom: 0.5rem;
-            background: #eff6ff !important;
             padding: 0.5rem !important;
             border-radius: 0.5rem;
         }
@@ -38,6 +37,21 @@
             width: calc(25% - 0.6rem); /* 每行默认放4场比赛 */
             min-width: 200px;
             flex-shrink: 0;
+            padding: 0.75rem !important;
+            margin-bottom: 0 !important;
+            font-size: 0.85rem;
+        }
+        .match-card > div {
+            padding-top: 0.35rem !important;
+            padding-bottom: 0.35rem !important;
+        }
+        .match-card button {
+            padding: 0.25rem 0.25rem !important;
+            font-size: 0.75rem !important;
+        }
+        .match-card .vs-text {
+            font-size: 0.75rem !important;
+            padding: 0 !important;
         }
         /* 移动端适配每行放2场 */
         @media (max-width: 768px) {
@@ -54,23 +68,6 @@
         .loser-text {
             text-decoration: line-through;
             color: #6b7280;
-        }
-        .match-card {
-            padding: 0.75rem !important;
-            margin-bottom: 0 !important;
-            font-size: 0.85rem;
-        }
-        .match-card > div {
-            padding-top: 0.35rem !important;
-            padding-bottom: 0.35rem !important;
-        }
-        .match-card button {
-            padding: 0.25rem 0.25rem !important;
-            font-size: 0.75rem !important;
-        }
-        .match-card .vs-text {
-            font-size: 0.75rem !important;
-            padding: 0 !important;
         }
         body::before {
             content: '';
@@ -119,7 +116,7 @@
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-blue-800 mb-3">🏆 青灯杯争霸赛对阵图生成器</h1>
             <p class="text-gray-600 text-lg">基于SHA256哈希可验证、公平Fisher-Yates随机洗牌，24支队伍公平对阵生成</p>
-            <div class="mt-2 text-sm text-gray-500">V1.1.1</div>
+            <div class="mt-2 text-sm text-gray-500">V1.1.2</div>
         </div>
 
         <!-- 操作区 -->
@@ -403,15 +400,11 @@
                 const isSemiFinalWinner = sortedWinners.length <= 3;
                 // 处理轮空：用衍生种子随机选择轮空队伍，保证可复现
                 if (sortedWinners.length % 2 !== 0) {
-                    // 生成当前轮次专属衍生种子：初始种子 + 轮次序号，和败者组区分开
-                    const roundSeed = stringToSeed(globalSeed.toString() + winnerRoundNum.toString() + 'winner');
+                    // 生成当前轮次专属衍生种子：初始种子 + 轮次序号 + winner标识，和败者组区分开
+                    const roundSeed = stringToSeed(`${globalSeed}${winnerRoundNum}winner`);
                     const random = seededRandom(roundSeed);
-                    const randomIndex = Math.max(0, Math.min(Math.floor(random() * sortedWinners.length), sortedWinners.length - 1));
-                    const byeTeam = sortedWinners[randomIndex];
-                    // 从列表中移除轮空队伍，剩下的继续配对
-                    sortedWinners.splice(randomIndex, 1);
-                    // 保持排序
-                    sortedWinners.sort((a,b) => a - b);
+                    const randomIndex = Math.floor(random() * sortedWinners.length) % sortedWinners.length;
+                    const byeTeam = sortedWinners.splice(randomIndex, 1)[0];
                     // 轮空加对应积分
                     if (isSemiFinalWinner) {
                         teamsMap[byeTeam].score += 2; // 半决赛轮空+2分
@@ -424,9 +417,9 @@
                         winner: byeTeam,
                         type: '轮空'
                     });
-                    i = 0;
                 }
-                // 两两配对
+                // 剩下的偶数个队伍两两配对
+                let i = 0;
                 for (; i < sortedWinners.length; i += 2) {
                     nextWinnerMatches.push({
                         team1: sortedWinners[i],
@@ -458,14 +451,10 @@
                     // 处理轮空：用衍生种子随机选择轮空队伍，保证可复现
                     if (nextLoserTeams.length % 2 !== 0) {
                         // 生成当前轮次专属衍生种子：初始种子 + 轮次序号 + loser标识，和胜者组区分开
-                        const roundSeed = stringToSeed(globalSeed.toString() + loserRoundNum.toString() + 'loser');
+                        const roundSeed = stringToSeed(`${globalSeed}${loserRoundNum}loser`);
                         const random = seededRandom(roundSeed);
-                        const randomIndex = Math.max(0, Math.min(Math.floor(random() * nextLoserTeams.length), nextLoserTeams.length - 1));
-                        const byeTeam = nextLoserTeams[randomIndex];
-                        // 从列表中移除轮空队伍，剩下的继续配对
-                        nextLoserTeams.splice(randomIndex, 1);
-                        // 保持排序
-                        nextLoserTeams.sort((a,b) => a - b);
+                        const randomIndex = Math.floor(random() * nextLoserTeams.length) % nextLoserTeams.length;
+                        const byeTeam = nextLoserTeams.splice(randomIndex, 1)[0];
                         teamsMap[byeTeam].score += 2; // 败者组轮空胜+2分
                         nextLoserMatches.push({
                             team1: byeTeam,
@@ -473,9 +462,9 @@
                             winner: byeTeam,
                             type: '轮空'
                         });
-                        j = 0;
                     }
-                    // 两两配对
+                    // 剩下的偶数个队伍两两配对
+                    let j = 0;
                     for (; j < nextLoserTeams.length; j += 2) {
                         nextLoserMatches.push({
                             team1: nextLoserTeams[j],
