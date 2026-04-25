@@ -627,10 +627,9 @@
                 teamsMap[loserNum].score += loseCount * 2;
                 teamsMap[loserNum].eliminated = true;
             } else if (isSemiFinal) {
-                // 半决赛BO3：每赢一场+2分，每输一场+1分
+                // 半决赛BO3：每赢一场+2分，每输一场+1分，败者直接淘汰
                 teamsMap[winnerNum].score += winCount * 2;
                 teamsMap[loserNum].score += loseCount * 1;
-                // 半决赛输了直接淘汰（单败）
                 teamsMap[loserNum].eliminated = true;
             } else {
                 // 常规轮次
