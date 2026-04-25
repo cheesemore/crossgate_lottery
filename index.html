@@ -116,7 +116,7 @@
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-blue-800 mb-3">🏆 青灯杯争霸赛对阵图生成器</h1>
             <p class="text-gray-600 text-lg">基于SHA256哈希可验证、公平Fisher-Yates随机洗牌，24支队伍公平对阵生成</p>
-            <div class="mt-2 text-sm text-gray-500">V2.1.1</div>
+            <div class="mt-2 text-sm text-gray-500">V2.1.4</div>
         </div>
 
         <!-- 操作区 -->
@@ -268,7 +268,7 @@
             });
             // 更新总积分
             const totalScore = Object.values(teamsMap).reduce((sum, team) => sum + team.score, 0);
-            document.getElementById('teamListTitle').innerText = `📋 参赛队伍列表（共24支）| 总分：${totalScore}分`;
+            document.getElementById('teamListTitle').innerText = `📋 参赛队伍列表（共24支）| 总分: ${totalScore}分`;
             // 如果赛事结束，显示冠军区
             const aliveTeams = Object.values(teamsMap).filter(t => !t.eliminated).length;
             if (aliveTeams === 1) {
@@ -384,7 +384,7 @@
                         }
                     ]
                 });
-                return true;
+                return true; // 生成完半决赛后直接返回，不执行后面原来的双败轮次逻辑
             }
             // 3. 半决赛打完：生成决赛
             const semiRounds = allRounds.filter(r => r.type === '半决赛');
@@ -622,12 +622,12 @@
             const isSemiFinal = round.type === '半决赛';
             const isFinal = round.type === '决赛';
             if (isFinal) {
-                // 决赛BO3：每赢一场+3分，每输一场+2分
+                // 决赛BO3：每赢一场+3分，每输一场+2分，败者直接淘汰
                 teamsMap[winnerNum].score += winCount * 3;
                 teamsMap[loserNum].score += loseCount * 2;
                 teamsMap[loserNum].eliminated = true;
             } else if (isSemiFinal) {
-                // 半决赛BO3：每赢一场+2分，每输一场+1分，败者直接淘汰
+                // 半决赛BO3：每赢一场+2分，每输一场+1分，败者直接淘汰（单败）
                 teamsMap[winnerNum].score += winCount * 2;
                 teamsMap[loserNum].score += loseCount * 1;
                 teamsMap[loserNum].eliminated = true;
