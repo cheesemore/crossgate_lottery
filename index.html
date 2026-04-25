@@ -347,12 +347,7 @@
                 }
                 // 序号最小轮空：默认取index 0，因为sortedWinners已经按序号从小到大排序
                 const byeTeam = sortedWinners.splice(byeIndex, 1)[0];
-                // 轮空加对应积分
-                if (isSemiFinalWinner) {
-                    teamsMap[byeTeam].score += 2; // 半决赛轮空+2分
-                } else {
-                    teamsMap[byeTeam].score += 3; // 胜者组轮空胜+3分
-                }
+                // 轮空不计分
                 nextWinnerMatches.push({
                     team1: byeTeam,
                     team2: null,
@@ -401,7 +396,7 @@
                     }
                     // 序号最小轮空：默认取index 0，因为nextLoserTeams已经按序号从小到大排序
                     const byeTeam = nextLoserTeams.splice(byeIndex, 1)[0];
-                    teamsMap[byeTeam].score += 2; // 败者组轮空胜+2分
+                    // 轮空不计分
                     nextLoserMatches.push({
                         team1: byeTeam,
                         team2: null,
