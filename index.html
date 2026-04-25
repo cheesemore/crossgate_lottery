@@ -116,7 +116,7 @@
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-blue-800 mb-3">🏆 青灯杯争霸赛对阵图生成器</h1>
             <p class="text-gray-600 text-lg">基于SHA256哈希可验证、公平Fisher-Yates随机洗牌，24支队伍公平对阵生成</p>
-            <div class="mt-2 text-sm text-gray-500">V1.1.3</div>
+            <div class="mt-2 text-sm text-gray-500">V1.1.4</div>
         </div>
 
         <!-- 操作区 -->
@@ -267,7 +267,7 @@
         function generateNextRound() {
             // 检查是不是已经到决赛了
             const hasFinal = allRounds.some(r => r.type === '决赛');
-            if (hasFinal) return;
+            if (hasFinal) return false;
             // 收集最新一轮的胜者组和败者组
             const winnerRounds = allRounds.filter(r => r.type === '胜者组' || r.type === '首轮');
             const loserRounds = allRounds.filter(r => r.type === '败者组');
@@ -297,7 +297,7 @@
                         type: '决赛'
                     }]
                 });
-                return;
+                return true;
             }
             // 如果胜者组只剩1个，败者组只剩1个，打决赛
             if (sortedWinners.length === 1 && nextLoserTeams.length === 1) {
@@ -311,7 +311,7 @@
                         type: '决赛'
                     }]
                 });
-                return;
+                return true;
             }
             // 生成下一轮胜者组对阵
             const winnerRoundNum = winnerRounds.length;
@@ -405,6 +405,14 @@
                     matches: nextLoserMatches
                 });
             }
+            return true;
+        }
+
+        // 检查当前所有比赛是否都已完成
+        function isAllMatchesFinished() {
+            return allRounds.every(round => {
+                return round.matches.every(m => m.winner !== null || m.team2 === null);
+            });
         }
 
         // 渲染所有轮次对阵
@@ -483,14 +491,6 @@
             });
             // 更新队伍列表显示积分
             renderTeamListWithScore();
-            // 检查所有比赛是不是都完成了，完成的话生成下一轮
-            const allMatchesFinished = allRounds.every(round => {
-                return round.matches.every(m => m.winner !== null || m.team2 === null);
-            });
-            if (allMatchesFinished && allRounds.length > 0) {
-                generateNextRound();
-                renderAllRounds();
-            }
         }
 
         // 处理比赛胜负
@@ -533,6 +533,18 @@
                     teamsMap[loserNum].eliminated = true; // 败者组败者直接淘汰
                 }
             }
+
+            // 检查是否所有比赛都已完成，如果完成则生成下一轮并重新渲染
+            const allFinished = isAllMatchesFinished();
+            if (allFinished) {
+                const hasNextRound = generateNextRound();
+                if (!hasNextRound) {
+                    // 没有下一轮了，直接渲染即可（已经到决赛打完）
+                    renderAllRounds();
+                    return;
+                }
+            }
+
             // 重新渲染
             renderAllRounds();
         }
