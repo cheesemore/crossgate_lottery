@@ -17,7 +17,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-around;
-            gap: 2rem;
+            gap: 1.5rem;
         }
         .bracket-line {
             position: relative;
@@ -54,8 +54,8 @@
     <div class="max-w-[95%] mx-auto max-w-8xl">
         <!-- 头部 -->
         <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-blue-800 mb-3">🏆 魔力宝贝青春服灯总赞助赛 对阵图生成器</h1>
-            <p class="text-gray-600 text-lg">基于哈希种子可复现、公平随机生成对阵关系</p>
+            <h1 class="text-4xl font-bold text-blue-800 mb-3">🏆 魔力宝贝青春服灯总赞助赛 随机编号生成器</h1>
+            <p class="text-gray-600 text-lg">基于SHA256哈希可验证、公平Fisher-Yates随机洗牌</p>
             <div class="mt-2 text-sm text-gray-500">V1.0.0</div>
         </div>
 
@@ -63,15 +63,15 @@
         <div class="bg-white rounded-2xl shadow-xl p-8 mb-10">
             <div class="grid md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">🔑 输入哈希种子（相同种子生成完全相同的对阵图）</label>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">🔑 输入哈希种子（相同种子生成完全相同的编号）</label>
                     <input type="text" id="hashSeed" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono" placeholder="输入任意哈希值/字符串，留空则自动随机生成">
                 </div>
                 <div class="flex items-end">
-                    <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all">🎲 生成对阵图</button>
+                    <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all">🎲 生成随机编号</button>
                 </div>
             </div>
             <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p class="text-sm text-yellow-700">💡 提示：使用相同的哈希种子每次都会生成完全一致的对阵图，可用于公平抽签场景，结果可复现、不可篡改</p>
+                <p class="text-sm text-yellow-700">💡 提示：使用相同的哈希种子每次都会生成完全一致的编号分配，可复现、不可篡改，符合区块链抽签逻辑</p>
             </div>
         </div>
 
@@ -83,11 +83,11 @@
             </div>
         </div>
 
-        <!-- 对阵图区 -->
-        <div class="bg-white rounded-2xl shadow-xl p-8 mb-10 hidden" id="bracketSection">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">⚔️ 对阵图</h2>
-            <div class="flex overflow-x-auto pb-4 gap-8" id="bracketContainer">
-                <!-- 动态生成对阵轮次 -->
+        <!-- 随机编号结果区 -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-10 hidden" id="resultSection">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">🎫 队伍随机编号分配结果</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3" id="numList">
+                <!-- 动态生成编号对应列表 -->
             </div>
         </div>
 
@@ -100,13 +100,12 @@
 
         <!-- 说明 -->
         <div class="bg-white rounded-2xl shadow-xl p-6 mb-10">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">📝 赛制说明</h3>
+            <h3 class="text-xl font-bold text-gray-800 mb-4">📝 算法说明</h3>
             <ul class="list-disc list-inside space-y-2 text-gray-700">
-                <li>第一轮：24进12，24支队伍随机配对，12场比赛，胜者晋级</li>
-                <li>第二轮：12进6，12支晋级队伍随机配对，6场比赛，胜者晋级</li>
-                <li>第三轮：6进3，6支晋级队伍随机配对，3场比赛，胜者晋级</li>
-                <li>第四轮：半决赛，3支晋级队伍随机抽签1支轮空直接进决赛，剩下2支对战，胜者晋级决赛</li>
-                <li>第五轮：决赛，2支队伍对战，胜者为总冠军</li>
+                <li>采用Fisher-Yates洗牌算法，保证每个编号分配概率完全均匀</li>
+                <li>随机种子支持自定义，相同种子永远生成完全相同的编号顺序，结果可复现、可验证，杜绝黑幕</li>
+                <li>底层采用标准SHA256哈希算法驱动随机数生成，符合区块链可验证随机数规范</li>
+                <li>24支队伍获取编号完全公平，无任何人工干预可能</li>
             </ul>
         </div>
     </div>
@@ -115,7 +114,7 @@
         // 24支队伍数据
         const teams = [
             "光与影的回忆", "晴朗·传教", "凌晨", "五六七", "入我梦中来", "义薄云天",
-            "靓仔-豆包", "神™轩辕", "王林1", "佛爷1", "墨灬浅", "大彩电",
+            "靓仔·豆包", "神™轩辕", "王林1", "佛爷1", "墨灬浅", "大彩电",
             "★", "泡", "通辽李先生1", "喵喵1", "栩哥 巫师", "ゞ。朝花夕拾",
             "岁月如歌", "抠脚大汉", "小书童1", "云坚雨", "大老粗", "阿卡曼1"
         ];
@@ -155,12 +154,7 @@
             return newArray;
         }
 
-        // 随机选择一个胜者（模拟）
-        function pickWinner(teamA, teamB, randomFunc) {
-            return randomFunc() > 0.5 ? teamA : teamB;
-        }
-
-        // 生成对阵图
+        // 生成随机编号分配
         function generateBracket(seed) {
             // 生成随机种子，如果为空则用当前时间戳
             if (!seed.trim()) {
@@ -168,83 +162,35 @@
                 document.getElementById('hashSeed').value = seed;
             }
             const numericSeed = stringToSeed(seed);
-            const random = seededRandom(numericSeed);
 
-            // 打乱队伍顺序
-            const shuffledTeams = shuffleArray(teams, numericSeed);
+            // 生成1-24的数字数组，并用Fisher-Yates洗牌打乱，可复现
+            const numbers = Array.from({length:24}, (_,i)=>i+1);
+            const shuffledNums = shuffleArray(numbers, numericSeed);
+            // 编号和队伍对应：1号对应shuffledNums[0]的队伍，以此类推
+            const result = teams.map((team, idx) => ({
+                num: shuffledNums[idx],
+                team: team
+            })).sort((a,b) => a.num - b.num); // 按编号从小到大排序
 
-            // 显示队伍列表
-            renderTeamList(shuffledTeams);
+            // 显示队伍列表和编号结果
+            renderTeamList(teams);
+            renderNumberResult(result);
 
-            // 生成各轮对阵
-            const rounds = [];
+            // 隐藏其他区域
+            document.getElementById('championSection').classList.add('hidden');
+        }
 
-            // 第一轮：24进12
-            const round1 = [];
-            for (let i = 0; i < 24; i += 2) {
-                const match = {
-                    teamA: shuffledTeams[i],
-                    teamB: shuffledTeams[i+1],
-                    winner: pickWinner(shuffledTeams[i], shuffledTeams[i+1], random)
-                };
-                round1.push(match);
-            }
-            rounds.push({ name: "第一轮：24进12", matches: round1 });
-
-            // 第二轮：12进6
-            const round1Winners = round1.map(m => m.winner);
-            const round2 = [];
-            for (let i = 0; i < 12; i += 2) {
-                const match = {
-                    teamA: round1Winners[i],
-                    teamB: round1Winners[i+1],
-                    winner: pickWinner(round1Winners[i], round1Winners[i+1], random)
-                };
-                round2.push(match);
-            }
-            rounds.push({ name: "第二轮：12进6", matches: round2 });
-
-            // 第三轮：6进3
-            const round2Winners = round2.map(m => m.winner);
-            const round3 = [];
-            for (let i = 0; i < 6; i += 2) {
-                const match = {
-                    teamA: round2Winners[i],
-                    teamB: round2Winners[i+1],
-                    winner: pickWinner(round2Winners[i], round2Winners[i+1], random)
-                };
-                round3.push(match);
-            }
-            rounds.push({ name: "第三轮：6进3", matches: round3 });
-
-            // 第四轮：半决赛（3进2，1个轮空）
-            const round3Winners = round3.map(m => m.winner);
-            // 随机选一个轮空
-            const byeIndex = Math.floor(random() * 3);
-            const byeTeam = round3Winners[byeIndex];
-            const semiTeams = round3Winners.filter((_, i) => i !== byeIndex);
-            const semiMatch = {
-                teamA: semiTeams[0],
-                teamB: semiTeams[1],
-                winner: pickWinner(semiTeams[0], semiTeams[1], random),
-                byeTeam: byeTeam
-            };
-            rounds.push({ name: "半决赛：3进2", matches: [semiMatch], isSemi: true });
-
-            // 第五轮：决赛
-            const finalMatch = {
-                teamA: byeTeam,
-                teamB: semiMatch.winner,
-                winner: pickWinner(byeTeam, semiMatch.winner, random)
-            };
-            rounds.push({ name: "决赛", matches: [finalMatch], isFinal: true });
-
-            // 渲染对阵图
-            renderBracket(rounds);
-
-            // 显示冠军
-            document.getElementById('championName').textContent = finalMatch.winner;
-            document.getElementById('championSection').classList.remove('hidden');
+        // 渲染编号对应结果
+        function renderNumberResult(list) {
+            const container = document.getElementById('numList');
+            container.innerHTML = '';
+            list.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'p-4 bg-blue-50 rounded-lg border border-blue-200';
+                div.innerHTML = `<div class="flex items-center gap-3"><span class="text-2xl font-bold text-blue-700 w-10 text-right">${item.num}</span><span class="font-medium text-gray-800">${item.team}</span></div>`;
+                container.appendChild(div);
+            });
+            document.getElementById('resultSection').classList.remove('hidden');
         }
 
         // 渲染队伍列表
@@ -254,103 +200,10 @@
             teams.forEach((team, index) => {
                 const div = document.createElement('div');
                 div.className = 'p-3 bg-gray-50 rounded-lg border border-gray-200 text-center';
-                div.innerHTML = `<span class="text-sm font-bold text-gray-500 mr-2">${index+1}.</span><span class="font-medium">${team}</span>`;
+                div.innerHTML = `<span class="text-sm font-bold text-gray-500 mr-2">${index+1}</span><span class="font-medium">${team}</span>`;
                 container.appendChild(div);
             });
             document.getElementById('teamListSection').classList.remove('hidden');
-        }
-
-        // 渲染对阵图
-        function renderBracket(rounds) {
-            const container = document.getElementById('bracketContainer');
-            container.innerHTML = '';
-
-            rounds.forEach((round, roundIndex) => {
-                const roundDiv = document.createElement('div');
-                roundDiv.className = 'bracket-round min-w-[250px]';
-                roundDiv.innerHTML = `<h3 class="text-center font-bold text-lg text-blue-700 mb-4 sticky top-0 py-2 z-10 bg-white/95 rounded-lg">${round.name}</h3>`;
-
-                if (round.isSemi) {
-                    // 半决赛特殊处理，显示轮空队伍
-                    const match = round.matches[0];
-                    const matchDiv = document.createElement('div');
-                    matchDiv.className = 'mb-8';
-                    matchDiv.innerHTML = `
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-center">
-                            <div class="font-bold text-yellow-700">轮空直接晋级决赛</div>
-                            <div class="text-lg font-medium mt-1">${match.byeTeam}</div>
-                        </div>
-                        <div class="match-card bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                            <div class="pb-3 border-b border-gray-100">
-                                <span class="${match.winner === match.teamA ? 'winner-text' : ''}">${match.teamA}</span>
-                            </div>
-                            <div class="pt-3">
-                                <span class="${match.winner === match.teamB ? 'winner-text' : ''}">${match.teamB}</span>
-                            </div>
-                            ${match.winner ? 
-                                `<div class="mt-3 pt-3 border-t border-gray-200">
-                                    <div class="text-sm font-bold text-green-700">胜者：${match.winner}</div>
-                                </div>` :
-                                `<div class="mt-3 pt-3 border-t border-gray-200 grid grid-cols-2 gap-2">
-                                    <button class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded" onclick="handleWin(${roundIndex}, ${0}, '${match.teamA}')">${match.teamA}胜</button>
-                                    <button class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded" onclick="handleWin(${roundIndex}, ${0}, '${match.teamB}')">${match.teamB}胜</button>
-                                </div>`
-                            }
-                        </div>
-                    `;
-                    roundDiv.appendChild(matchDiv);
-                } else {
-                    round.matches.forEach((match, matchIndex) => {
-                        const matchDiv = document.createElement('div');
-                        matchDiv.className = 'match-card bg-white border border-gray-200 rounded-lg p-4 shadow-sm';
-                        
-                        if (round.isFinal) {
-                            matchDiv.innerHTML = `
-                                <div class="pb-4 border-b border-gray-100 text-center">
-                                    <span class="${match.winner === match.teamA ? 'winner-text text-xl' : 'text-xl'}">${match.teamA}</span>
-                                </div>
-                                <div class="py-2 text-center text-gray-500 text-sm">VS</div>
-                                <div class="pt-4 border-t border-gray-100 text-center">
-                                    <span class="${match.winner === match.teamB ? 'winner-text text-xl' : 'text-xl'}">${match.teamB}</span>
-                                </div>
-                                ${match.winner ? 
-                                    `<div class="mt-4 pt-4 border-t border-gray-200 text-center">
-                                        <div class="text-lg font-bold text-green-700">🏆 冠军：${match.winner}</div>
-                                    </div>` :
-                                    `<div class="mt-4 pt-3 border-t border-gray-200 grid grid-cols-2 gap-2">
-                                        <button class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded" onclick="handleWin(${roundIndex}, ${matchIndex}, '${match.teamA}')">${match.teamA}胜</button>
-                                        <button class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded" onclick="handleWin(${roundIndex}, ${matchIndex}, '${match.teamB}')">${match.teamB}胜</button>
-                                    </div>`
-                            }
-                            `;
-                        } else {
-                            matchDiv.innerHTML = `
-                                <div class="pb-3 border-b border-gray-100">
-                                    <span class="${match.winner === match.teamA ? 'winner-text' : ''}">${match.teamA}</span>
-                                </div>
-                                <div class="py-1 text-center text-gray-400 text-sm">VS</div>
-                                <div class="pt-3">
-                                    <span class="${match.winner === match.teamB ? 'winner-text' : ''}">${match.teamB}</span>
-                                </div>
-                                ${match.winner ? 
-                                    `<div class="mt-3 pt-3 border-t border-gray-200">
-                                        <div class="text-sm font-bold text-green-700">晋级：${match.winner}</div>
-                                    </div>` :
-                                    `<div class="mt-3 pt-3 border-t border-gray-200 grid grid-cols-2 gap-2">
-                                        <button class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded" onclick="handleWin(${roundIndex}, ${matchIndex}, '${match.teamA}')">${match.teamA}胜</button>
-                                        <button class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded" onclick="handleWin(${roundIndex}, ${matchIndex}, '${match.teamB}')">${match.teamB}胜</button>
-                                    </div>`
-                            }
-                            `;
-                        }
-                        roundDiv.appendChild(matchDiv);
-                    });
-                }
-
-                container.appendChild(roundDiv);
-            });
-
-            document.getElementById('bracketSection').classList.remove('hidden');
         }
 
         // 生成按钮点击事件
