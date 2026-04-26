@@ -1,3 +1,6 @@
+
+<把上面的完整代码，替换掉计分逻辑部分，修改后如下：
+>
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -116,7 +119,7 @@
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-blue-800 mb-3">🏆 青灯杯争霸赛对阵图生成器</h1>
             <p class="text-gray-600 text-lg">基于SHA256哈希可验证、公平Fisher-Yates随机洗牌，24支队伍公平对阵生成</p>
-            <div class="mt-2 text-sm text-gray-500">V2.1.6</div>
+            <div class="mt-2 text-sm text-gray-500">V2.2.0 正式版</div>
         </div>
 
         <!-- 操作区 -->
@@ -631,14 +634,14 @@
             const isSemiFinal = round.type === "半决赛";
             const isFinal = round.type === "决赛";
             if (isFinal) {
-                // 决赛BO3：每赢一场+3分，每输一场+2分，败者直接淘汰
-                teamsMap[winnerNum].score += winCount * 3;
-                teamsMap[loserNum].score += loseCount * 2;
+                // 决赛BO3：每赢一场+3分，每输一场+2分，打了winCount+loseCount场，胜者赢winCount输loseCount，败者赢loseCount输winCount
+                teamsMap[winnerNum].score += winCount * 3 + loseCount * 2;
+                teamsMap[loserNum].score += loseCount * 3 + winCount * 2;
                 teamsMap[loserNum].eliminated = true;
             } else if (isSemiFinal) {
-                // 半决赛BO3：每赢一场+2分，每输一场+1分，败者直接淘汰
-                teamsMap[winnerNum].score += winCount * 2;
-                teamsMap[loserNum].score += loseCount * 1;
+                // 半决赛BO3：每赢一场+2分，每输一场+1分，胜者赢winCount输loseCount，败者赢loseCount输winCount
+                teamsMap[winnerNum].score += winCount * 2 + loseCount * 1;
+                teamsMap[loserNum].score += loseCount * 2 + winCount * 1;
                 teamsMap[loserNum].eliminated = true;
             } else {
                 // 常规轮次
