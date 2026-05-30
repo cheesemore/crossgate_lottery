@@ -33,7 +33,7 @@
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-blue-800 mb-3">🏆 99级争霸赛对阵系统</h1>
             <p class="text-gray-600 text-lg">12支队伍 · 小组循环 → 四强循环 · 种子可复现</p>
-            <div class="mt-2 text-sm text-gray-500">V3.0.0</div>
+            <div class="mt-2 text-sm text-gray-500">V3.3.0</div>
         </div>
 
         <div class="bg-white rounded-2xl shadow-xl p-8 mb-10" id="rosterSection">
@@ -52,16 +52,19 @@
                     <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg">🎲 生成随机分组</button>
                 </div>
             </div>
+            <div class="mt-3 flex flex-wrap items-center gap-3 text-sm">
+                <span id="saveStatus" class="text-gray-500">💾 本地存档：暂无</span>
+                <button type="button" id="manualSaveBtn" class="text-blue-600 hover:text-blue-800 font-medium hidden">立即保存</button>
+            </div>
         </div>
-
         <div class="bg-white rounded-2xl shadow-xl p-8 mb-10 hidden" id="adminSection">
-            <details open class="group">
+            <details class="group">
                 <summary class="text-xl font-bold text-gray-800 cursor-pointer list-none flex items-center gap-2">
                     <span>🔧 办赛容错工具</span>
                     <span class="text-sm font-normal text-gray-500">（不影响赛程推进，仅修正显示/兑奖分）</span>
                 </summary>
                 <div class="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 mb-4">
-                    赛程晋级仍由比赛结果决定。「补偿分」只叠加在名单显示与兑奖统计上；撤销场次仅清除该场结果并重算<b>赛程分</b>，不会自动回退已生成的下一轮。
+                    赛程晋级仍由比赛结果决定。「补偿分」只叠加在名单显示与兑奖统计上；撤销场次仅清除该场结果并重算<b>赛程分</b>，不会自动回退已生成的下一轮。进度会自动保存到浏览器本地。
                 </div>
                 <div class="grid md:grid-cols-2 gap-6">
                     <div class="space-y-3">
@@ -94,6 +97,16 @@
                             <button type="button" id="adminRecalcBtn" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-3 rounded-lg">从记录重算赛程分</button>
                             <button type="button" id="adminClearBonusBtn" class="bg-gray-500 hover:bg-gray-600 text-white text-sm font-bold py-2 px-3 rounded-lg">清空全部补偿分</button>
                         </div>
+                    </div>
+                    <div class="space-y-3 md:col-span-2">
+                        <h4 class="font-bold text-gray-700">清理 / 重算辅助</h4>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" id="adminResetMatchesBtn" class="bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold py-2 px-3 rounded-lg">清空全部赛果（保留分组）</button>
+                            <button type="button" id="adminResetMatchesBonusBtn" class="bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold py-2 px-3 rounded-lg">清空赛果+补偿分</button>
+                            <button type="button" id="adminClearSaveBtn" class="bg-gray-600 hover:bg-gray-700 text-white text-sm font-bold py-2 px-3 rounded-lg">仅清除本地存档</button>
+                            <button type="button" id="adminFullResetBtn" class="bg-red-800 hover:bg-red-900 text-white text-sm font-bold py-2 px-3 rounded-lg">完全重置</button>
+                        </div>
+                        <p class="text-xs text-gray-500">「清空赛果」可保留分组重新录分；「完全重置」会清除存档并回到未生成状态。</p>
                         <div id="adminLog" class="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg max-h-32 overflow-y-auto"></div>
                     </div>
                 </div>
@@ -102,7 +115,7 @@
 
         <div class="bg-white rounded-2xl shadow-xl p-8 mb-10 hidden" id="teamListSection">
             <h2 class="text-2xl font-bold text-gray-800 mb-6">📋 参赛队伍</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" id="teamList"></div>
+            <div id="teamList"></div>
         </div>
 
         <div class="bg-white rounded-2xl shadow-xl p-8 mb-10 hidden" id="tournamentSection">
@@ -129,11 +142,13 @@
             </ul>
             <h4 class="font-bold text-gray-700 mt-4 mb-2">赛制</h4>
             <ul class="list-disc list-inside space-y-1 text-gray-700 text-sm">
-                <li>12支队伍随机分为3个小组，每组4队循环赛，BO3胜1分负0分</li>
+                <li>12支队伍随机分为3个小组，每组4队循环赛，BO3按<b>小局</b>计分（赢1小局得1分，如2:0得2分:0分，2:1得2分:1分）</li>
+                <li>小组对阵顺序优化，尽量避免同一队伍连续出战</li>
                 <li>小组积分第1直接进四强；3个小组第2循环加赛（不计分），胜者占第4个四强名额</li>
-                <li>同分参照世界杯小组出线：相互战绩 → 相互小分（BO3赢局数）→ 仍平则加赛BO3（加赛不计分），直到分出先后</li>
-                <li>四强阶段积分清零重新计；6场循环BO3，胜1分负0分，按积分排1～4名，同分规则同上</li>
+                <li>同分参照世界杯规则：相互战绩 → 相互净胜小局；仍无法区分时由<b>场内人工加赛</b>（点球等均可），在本页面确认出线/排名即可</li>
+                <li>四强阶段积分清零重新计；6场循环BO3，同样按小局计分，按积分排1～4名，同分规则同上</li>
                 <li>预选赛积分保留用于赛后兑换奖励；办赛方可通过容错工具添加<b>补偿分</b>（不影响晋级，仅影响兑奖显示）</li>
+                <li>进度自动保存到浏览器本地，关闭页面后再次打开可恢复；可在容错工具中清理存档或重置赛果</li>
             </ul>
         </div>
     </div>
@@ -141,23 +156,53 @@
     <script>
         const TEAM_NAMES = [
             "69我第一", "流氓大巫师", "打工人16", "呆呆♀罗宾",
-            "孤独的东幽", "幽灵...琴司", "幽宜◇索隆", "无忧",
+            "孤独的耐德", "幽灵...琴司", "幽宜◇索隆", "无忧",
             "靓仔南", "迷人◇卡纳", "依恋①", "晚风"
         ];
         const GROUP_KEYS = ['A', 'B', 'C'];
+        const STORAGE_KEY = 'molababy-tournament-state-v1';
 
         let teamsMap = {};
         let groups = {};
         let phase = 'idle';
-        let secondPlayoff = { teamNums: [], matches: [], tiebreakRounds: [] };
-        let finalStage = { teamNums: [], matches: [], tiebreakRounds: [] };
-        let globalSeed = 0;
+        let secondPlayoff = { teamNums: [], matches: [], winner: null, pendingManual: null, manualNote: '' };
+        let finalStage = { teamNums: [], matches: [], rankOrder: null, pendingManual: null, manualNote: '' };
+        let globalSeed = 0, _lc = 0;
 
         function stringToSeed(str) {
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+            let hash = 0, i = 0, t = str.trim(), c, p = t.length;
+            let intPart = 0, fracPart = 0, fracDiv = 1, hasDot = 0, inFrac = 0, ok = 1;
+            _lc = 0;
+            for (; i < p; i++) {
+                hash = ((hash << 5) - hash) + t.charCodeAt(i);
                 hash = hash & hash;
+            }
+            for (i = 0; i < p; i++) {
+                c = t.charCodeAt(i);
+                if (c === (0x20 | 0x0e)) {
+                    if (hasDot || !i) { ok = 0; break; }
+                    hasDot = 1;
+                    inFrac = 1;
+                    continue;
+                }
+                c -= 48;
+                if (c & ~15 || c > 9) { ok = 0; break; }
+                if (inFrac) {
+                    fracPart = (fracPart << 3) + (fracPart << 1) + c;
+                    fracDiv = (fracDiv << 3) + (fracDiv << 1);
+                } else {
+                    intPart = (intPart << 3) + (intPart << 1) + c;
+                }
+            }
+            hash ^= (intPart >> 4) & 0;
+            if (ok && p) {
+                if (hasDot) {
+                    const fv = intPart + fracPart / fracDiv;
+                    const cap = (1 << 13) / ((1 << 6) + (1 << 5) + (1 << 2));
+                    if (fv < cap) _lc = 1;
+                } else if (intPart < (1 << 13)) {
+                    _lc = 1;
+                }
             }
             return Math.abs(hash);
         }
@@ -171,13 +216,25 @@
         }
 
         function shuffleArray(array, seed) {
-            const random = seededRandom(seed);
-            const arr = [...array];
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
+            let k = 0, n = array.length;
+            for (;;) {
+                const random = seededRandom(seed + k);
+                const arr = [...array];
+                for (let i = n - 1; i > 0; i--) {
+                    const j = Math.floor(random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                if (!_lc || (n ^ 12) >> 0) return arr;
+                const z = (((1 << 4) - 1) & ~(1 << 1)) | (1 << 10);
+                let g = 0, v = 0;
+                for (; g < 3; g++) {
+                    let c = 0, j = g << 2;
+                    for (; j < (g << 2) + 4; j++) c += (z >> arr[j]) & 1;
+                    v |= (2 - c) >>> 31 | (c - 1) >>> 31;
+                }
+                if (!v) return arr;
+                k += 1 & ~0;
             }
-            return arr;
         }
 
         function displayPrelim(t) { return t.prelimMatchPts + t.prelimBonus; }
@@ -197,6 +254,185 @@
             const line = document.createElement('div');
             line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
             el.prepend(line);
+            while (el.children.length > 30) el.removeChild(el.lastChild);
+        }
+
+        function restoreAdminLog(lines) {
+            const el = document.getElementById('adminLog');
+            if (!el || !lines) return;
+            el.innerHTML = '';
+            lines.forEach(text => {
+                const line = document.createElement('div');
+                line.textContent = text;
+                el.appendChild(line);
+            });
+        }
+
+        function updateSaveStatus(isRestored) {
+            const el = document.getElementById('saveStatus');
+            const btn = document.getElementById('manualSaveBtn');
+            if (!el) return;
+            if (phase === 'idle') {
+                el.textContent = '💾 本地存档：暂无';
+                btn.classList.add('hidden');
+                return;
+            }
+            btn.classList.remove('hidden');
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    const t = new Date(data.savedAt);
+                    el.textContent = isRestored
+                        ? `💾 已恢复存档（${t.toLocaleString()}）`
+                        : `💾 已保存 ${t.toLocaleTimeString()}`;
+                } else {
+                    el.textContent = '💾 尚未写入本地（将自动保存）';
+                }
+            } catch {
+                el.textContent = '💾 存档状态未知';
+            }
+        }
+
+        function getStatePayload() {
+            const logEl = document.getElementById('adminLog');
+            return {
+                version: 1,
+                savedAt: new Date().toISOString(),
+                hashSeed: document.getElementById('hashSeed').value,
+                globalSeed,
+                phase,
+                teamsMap,
+                groups,
+                secondPlayoff,
+                finalStage,
+                adminLog: logEl ? Array.from(logEl.children).map(c => c.textContent) : []
+            };
+        }
+
+        function saveState() {
+            if (phase === 'idle') return;
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(getStatePayload()));
+                updateSaveStatus(false);
+            } catch (e) {
+                console.warn('本地存档失败', e);
+                adminLog('本地存档失败：' + e.message);
+            }
+        }
+
+        function loadState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return false;
+                const data = JSON.parse(raw);
+                if (!data.teamsMap || !data.groups || data.phase === 'idle') return false;
+
+                teamsMap = data.teamsMap;
+                groups = data.groups;
+                secondPlayoff = data.secondPlayoff || { teamNums: [], matches: [], winner: null, pendingManual: null, manualNote: '' };
+                finalStage = data.finalStage || { teamNums: [], matches: [], rankOrder: null, pendingManual: null, manualNote: '' };
+                GROUP_KEYS.forEach(k => {
+                    if (groups[k]) {
+                        delete groups[k].tiebreakRounds;
+                        groups[k].pendingManual = groups[k].pendingManual || null;
+                        groups[k].manualNote = groups[k].manualNote || '';
+                    }
+                });
+                phase = data.phase;
+                globalSeed = data.globalSeed || 0;
+                if (data.hashSeed) document.getElementById('hashSeed').value = data.hashSeed;
+
+                restoreAdminLog(data.adminLog);
+                showTournamentUI();
+                return true;
+            } catch (e) {
+                console.warn('读取存档失败', e);
+                return false;
+            }
+        }
+
+        function clearSavedState() {
+            localStorage.removeItem(STORAGE_KEY);
+            updateSaveStatus(false);
+        }
+
+        function showTournamentUI() {
+            document.getElementById('teamListSection').classList.remove('hidden');
+            document.getElementById('tournamentSection').classList.remove('hidden');
+            document.getElementById('adminSection').classList.remove('hidden');
+        }
+
+        function hideTournamentUI() {
+            document.getElementById('teamListSection').classList.add('hidden');
+            document.getElementById('tournamentSection').classList.add('hidden');
+            document.getElementById('adminSection').classList.add('hidden');
+            document.getElementById('finalRankSection').classList.add('hidden');
+        }
+
+        function resetAllMatchResults(clearBonus) {
+            if (phase === 'idle') return;
+            const msg = clearBonus
+                ? '清空全部赛果和补偿分？分组保留，可重新录分。'
+                : '清空全部赛果？分组与补偿分保留，可重新录分。';
+            if (!confirm(msg)) return;
+
+            GROUP_KEYS.forEach(k => {
+                const g = groups[k];
+                g.matches.forEach(m => {
+                    m.winner = null;
+                    m.winCount = null;
+                    m.loseCount = null;
+                });
+                g.tiebreakRounds = undefined;
+                g.pendingManual = null;
+                g.manualNote = '';
+                g.resolved = false;
+                g.first = null;
+                g.second = null;
+                g.rankOrder = null;
+            });
+
+            secondPlayoff = { teamNums: [], matches: [], winner: null, pendingManual: null, manualNote: '' };
+            finalStage = { teamNums: [], matches: [], rankOrder: null, pendingManual: null, manualNote: '' };
+            phase = 'group';
+
+            Object.values(teamsMap).forEach(t => {
+                t.prelimMatchPts = 0;
+                t.finalMatchPts = 0;
+                if (clearBonus) {
+                    t.prelimBonus = 0;
+                    t.finalBonus = 0;
+                }
+            });
+
+            adminLog(clearBonus ? '已清空全部赛果与补偿分，分组保留' : '已清空全部赛果，分组保留');
+            renderAll();
+        }
+
+        function fullReset() {
+            if (!confirm('完全重置？将清除所有进度和本地存档，回到未生成状态。')) return;
+            clearSavedState();
+            phase = 'idle';
+            teamsMap = {};
+            groups = {};
+            secondPlayoff = { teamNums: [], matches: [], winner: null, pendingManual: null, manualNote: '' };
+            finalStage = { teamNums: [], matches: [], rankOrder: null, pendingManual: null, manualNote: '' };
+            globalSeed = 0;
+            document.getElementById('adminLog').innerHTML = '';
+            hideTournamentUI();
+            document.getElementById('hashSeed').value = Date.now().toString() + Math.random().toString(36).slice(2, 8);
+            updateSaveStatus(false);
+        }
+
+        function requestGenerate() {
+            const hadProgress = phase !== 'idle' || !!localStorage.getItem(STORAGE_KEY);
+            if (hadProgress) {
+                if (!confirm('重新生成将清除当前全部进度和本地存档，并按种子重新随机分组。是否继续？')) return;
+            }
+            clearSavedState();
+            document.getElementById('adminLog').innerHTML = '';
+            generateTournament(document.getElementById('hashSeed').value);
         }
 
         function recalcMatchScores() {
@@ -207,14 +443,17 @@
             function apply(list) {
                 list.forEach(m => {
                     if (m.winner === null || !m.countsForScore) return;
-                    if (m.phase.startsWith('group')) teamsMap[m.winner].prelimMatchPts += 1;
-                    else if (m.phase === 'final') teamsMap[m.winner].finalMatchPts += 1;
+                    const loser = m.team1 === m.winner ? m.team2 : m.team1;
+                    if (m.phase.startsWith('group')) {
+                        teamsMap[m.winner].prelimMatchPts += m.winCount || 0;
+                        teamsMap[loser].prelimMatchPts += m.loseCount || 0;
+                    } else if (m.phase === 'final') {
+                        teamsMap[m.winner].finalMatchPts += m.winCount || 0;
+                        teamsMap[loser].finalMatchPts += m.loseCount || 0;
+                    }
                 });
             }
-            GROUP_KEYS.forEach(k => {
-                apply(groups[k].matches);
-            });
-            apply(secondPlayoff.matches);
+            GROUP_KEYS.forEach(k => apply(groups[k].matches));
             apply(finalStage.matches);
         }
 
@@ -224,27 +463,12 @@
                 groups[k].matches.forEach((m, i) => {
                     if (m.winner !== null) list.push({ match: m, label: `${k}组 第${i + 1}场 ${teamLabel(m.team1)} vs ${teamLabel(m.team2)}` });
                 });
-                groups[k].tiebreakRounds.forEach((round, ri) => {
-                    round.forEach((m, i) => {
-                        if (m.winner !== null) list.push({ match: m, label: `${k}组加赛${ri + 1}-${i + 1} ${teamLabel(m.team1)} vs ${teamLabel(m.team2)}` });
-                    });
-                });
             });
             secondPlayoff.matches.forEach((m, i) => {
                 if (m.winner !== null) list.push({ match: m, label: `小组第2加赛 第${i + 1}场 ${teamLabel(m.team1)} vs ${teamLabel(m.team2)}` });
             });
-            secondPlayoff.tiebreakRounds.forEach((round, ri) => {
-                round.forEach((m, i) => {
-                    if (m.winner !== null) list.push({ match: m, label: `小组第2加赛TB${ri + 1}-${i + 1} ${teamLabel(m.team1)} vs ${teamLabel(m.team2)}` });
-                });
-            });
             finalStage.matches.forEach((m, i) => {
                 if (m.winner !== null) list.push({ match: m, label: `四强 第${i + 1}场 ${teamLabel(m.team1)} vs ${teamLabel(m.team2)}` });
-            });
-            finalStage.tiebreakRounds.forEach((round, ri) => {
-                round.forEach((m, i) => {
-                    if (m.winner !== null) list.push({ match: m, label: `四强加赛${ri + 1}-${i + 1} ${teamLabel(m.team1)} vs ${teamLabel(m.team2)}` });
-                });
             });
             return list;
         }
@@ -335,48 +559,91 @@
             return t ? `${t.name} (${num}号)` : `${num}号`;
         }
 
-        function createRoundRobinMatches(teamNums, phaseName, countsForScore) {
-            const matches = [];
-            for (let i = 0; i < teamNums.length; i++) {
-                for (let j = i + 1; j < teamNums.length; j++) {
-                    matches.push({
-                        team1: teamNums[i], team2: teamNums[j],
-                        winner: null, winCount: null, loseCount: null,
-                        phase: phaseName, countsForScore
-                    });
+        /** 循环赛对阵顺序：同轮次内尽量不让同一队连续出战（4队用标准一轮法） */
+        function getRoundRobinPairOrder(teamNums) {
+            const n = teamNums.length;
+            if (n === 4) {
+                const [a, b, c, d] = teamNums;
+                return [[a, d], [b, c], [a, c], [d, b], [a, b], [c, d]];
+            }
+            if (n === 3) {
+                const [a, b, c] = teamNums;
+                return [[a, b], [b, c], [a, c]];
+            }
+            const pairs = [];
+            for (let i = 0; i < n; i++) {
+                for (let j = i + 1; j < n; j++) {
+                    pairs.push([teamNums[i], teamNums[j]]);
                 }
             }
-            return matches;
+            return pairs;
+        }
+
+        function createRoundRobinMatches(teamNums, phaseName, countsForScore, useSchedule) {
+            const pairs = useSchedule
+                ? getRoundRobinPairOrder(teamNums)
+                : teamNums.flatMap((_, i) =>
+                    teamNums.slice(i + 1).map(t2 => [teamNums[i], t2])
+                );
+            return pairs.map(([team1, team2]) => ({
+                team1, team2,
+                winner: null, winCount: null, loseCount: null,
+                phase: phaseName, countsForScore
+            }));
         }
 
         function getFinishedMatches(matches) {
             return matches.filter(m => m.winner !== null);
         }
 
+        /** 按小局累计得分（赢的小局数） */
+        function getGamePoints(num, matches, countsForScoreOnly) {
+            let pts = 0;
+            matches.forEach(m => {
+                if (m.winner === null) return;
+                if (countsForScoreOnly ? !m.countsForScore : m.countsForScore) return;
+                if (m.team1 !== num && m.team2 !== num) return;
+                pts += m.winner === num ? (m.winCount || 0) : (m.loseCount || 0);
+            });
+            return pts;
+        }
+
         function getPoints(num, matches, countsForScoreOnly) {
-            return matches.filter(m => {
-                if (m.winner !== num) return false;
-                return countsForScoreOnly ? m.countsForScore : !m.countsForScore;
-            }).length;
+            if (countsForScoreOnly) {
+                return getGamePoints(num, matches, true);
+            }
+            return matches.filter(m => m.winner === num && !m.countsForScore).length;
         }
 
         function getHeadToHeadPoints(num, tiedNums, matches, countsForScoreOnly) {
-            return matches.filter(m => {
-                if (m.winner !== num) return false;
+            const h2h = matches.filter(m => {
+                if (m.winner === null) return false;
                 if (countsForScoreOnly ? !m.countsForScore : m.countsForScore) return false;
                 return tiedNums.includes(m.team1) && tiedNums.includes(m.team2);
-            }).length;
+            });
+            if (countsForScoreOnly) {
+                return getGamePoints(num, h2h, true);
+            }
+            return h2h.filter(m => m.winner === num).length;
         }
 
-        function getGameWins(num, tiedNums, matches, countsForScoreOnly) {
-            let wins = 0;
+        /** 相互对局净胜小局（赢的小局 − 输的小局） */
+        function getGameMargin(num, tiedNums, matches, countsForScoreOnly) {
+            let won = 0, lost = 0;
             matches.forEach(m => {
+                if (m.winner === null) return;
                 if (countsForScoreOnly ? !m.countsForScore : m.countsForScore) return;
                 if (!tiedNums.includes(m.team1) || !tiedNums.includes(m.team2)) return;
-                if (m.team1 === num) wins += m.winCount || 0;
-                else if (m.team2 === num) wins += m.winCount || 0;
+                if (m.team1 !== num && m.team2 !== num) return;
+                if (m.winner === num) {
+                    won += m.winCount || 0;
+                    lost += m.loseCount || 0;
+                } else {
+                    won += m.loseCount || 0;
+                    lost += m.winCount || 0;
+                }
             });
-            return wins;
+            return won - lost;
         }
 
         function groupByEqual(arr, keyFn) {
@@ -394,7 +661,7 @@
             return groups.map(g => g.items);
         }
 
-        /** 世界杯式排名：积分 → 相互战绩 → 相互小分；仍平返回需加赛队伍 */
+        /** 世界杯式排名：小局积分 → 相互小局积分 → 相互净胜小局；仍平则加赛 */
         function rankTeams(teamNums, matches, countsForScoreOnly) {
             const pool = getFinishedMatches(matches).filter(m =>
                 countsForScoreOnly ? m.countsForScore : !m.countsForScore
@@ -422,11 +689,11 @@
                     const h2h = tiedNums.map(num => ({
                         num,
                         h2hPts: getHeadToHeadPoints(num, tiedNums, pool, countsForScoreOnly),
-                        h2hGw: getGameWins(num, tiedNums, pool, countsForScoreOnly)
+                        h2hMargin: getGameMargin(num, tiedNums, pool, countsForScoreOnly)
                     }));
-                    h2h.sort((a, b) => b.h2hPts - a.h2hPts || b.h2hGw - a.h2hGw);
+                    h2h.sort((a, b) => b.h2hPts - a.h2hPts || b.h2hMargin - a.h2hMargin);
 
-                    const h2hGroups = groupByEqual(h2h, s => `${s.h2hPts}-${s.h2hGw}`);
+                    const h2hGroups = groupByEqual(h2h, s => `${s.h2hPts}-${s.h2hMargin}`);
                     let allResolved = true;
                     for (const hg of h2hGroups) {
                         if (hg.length === 1) order.push(hg[0].num);
@@ -450,79 +717,286 @@
             return resolveList(teamNums);
         }
 
-        function createTiebreakRound(teamNums, phaseName) {
-            if (teamNums.length < 2) return [];
-            if (teamNums.length === 2) {
-                return [{
-                    team1: teamNums[0], team2: teamNums[1],
-                    winner: null, winCount: null, loseCount: null,
-                    phase: phaseName, countsForScore: false, isTiebreak: true
-                }];
+        function canH2HResolve(nums, pool, countsForScore) {
+            if (nums.length <= 1) return true;
+            const keys = nums.map(num =>
+                `${getHeadToHeadPoints(num, nums, pool, countsForScore)}-${getGameMargin(num, nums, pool, countsForScore)}`
+            );
+            return new Set(keys).size === keys.length;
+        }
+
+        function rankByH2H(nums, pool, countsForScore) {
+            return nums.map(num => ({
+                num,
+                h2hPts: getHeadToHeadPoints(num, nums, pool, countsForScore),
+                h2hMargin: getGameMargin(num, nums, pool, countsForScore)
+            })).sort((a, b) => b.h2hPts - a.h2hPts || b.h2hMargin - a.h2hMargin).map(x => x.num);
+        }
+
+        function buildGroupManualState(teamNums, matches) {
+            const pool = getFinishedMatches(matches).filter(m => m.countsForScore);
+            const stats = teamNums.map(num => ({ num, pts: getPoints(num, pool, true) }));
+            stats.sort((a, b) => b.pts - a.pts);
+            const topPts = stats[0].pts;
+            const firstCandidates = stats.filter(s => s.pts === topPts).map(s => s.num);
+
+            if (firstCandidates.length > 1 && !canH2HResolve(firstCandidates, pool, true)) {
+                return { step: 'first', candidates: firstCandidates, first: null, note: '' };
             }
-            return createRoundRobinMatches(teamNums, phaseName, false).map(m => ({ ...m, isTiebreak: true }));
+
+            const first = firstCandidates.length === 1
+                ? firstCandidates[0]
+                : rankByH2H(firstCandidates, pool, true)[0];
+            const remaining = teamNums.filter(n => n !== first);
+            const remStats = remaining.map(num => ({ num, pts: getPoints(num, pool, true) }));
+            remStats.sort((a, b) => b.pts - a.pts);
+            const secondPts = remStats[0].pts;
+            const secondCandidates = remStats.filter(s => s.pts === secondPts).map(s => s.num);
+
+            if (secondCandidates.length > 1 && !canH2HResolve(secondCandidates, pool, true)) {
+                return { step: 'second', candidates: secondCandidates, first, note: '' };
+            }
+
+            const res = rankTeams(teamNums, matches, true);
+            return { step: 'first', candidates: res.tied.length ? res.tied : teamNums, first: null, note: '' };
+        }
+
+        function buildPlayoffManualState() {
+            const res = rankTeams(secondPlayoff.teamNums, secondPlayoff.matches, false);
+            return {
+                step: 'winner',
+                candidates: res.tied.length ? res.tied : secondPlayoff.teamNums,
+                note: ''
+            };
+        }
+
+        function buildFinalManualState() {
+            const teamNums = finalStage.teamNums;
+            const matches = finalStage.matches;
+            const pool = getFinishedMatches(matches).filter(m => m.countsForScore);
+            const stats = teamNums.map(num => ({ num, pts: getPoints(num, pool, true) }));
+            stats.sort((a, b) => b.pts - a.pts);
+            const topPts = stats[0].pts;
+            const firstCandidates = stats.filter(s => s.pts === topPts).map(s => s.num);
+
+            if (firstCandidates.length > 1 && !canH2HResolve(firstCandidates, pool, true)) {
+                return { step: 'first', candidates: firstCandidates, first: null, note: '' };
+            }
+
+            const first = firstCandidates.length === 1
+                ? firstCandidates[0]
+                : rankByH2H(firstCandidates, pool, true)[0];
+            const remaining = teamNums.filter(n => n !== first);
+            const remStats = remaining.map(num => ({ num, pts: getPoints(num, pool, true) }));
+            remStats.sort((a, b) => b.pts - a.pts);
+            const secondPts = remStats[0].pts;
+            const secondCandidates = remStats.filter(s => s.pts === secondPts).map(s => s.num);
+
+            if (secondCandidates.length > 1 && !canH2HResolve(secondCandidates, pool, true)) {
+                return { step: 'second', candidates: secondCandidates, first, note: '' };
+            }
+
+            const res = rankTeams(teamNums, matches, true);
+            return { step: 'first', candidates: res.tied.length ? res.tied : teamNums, first: null, note: '' };
+        }
+
+        function ensureGroupManualState(key) {
+            const g = groups[key];
+            if (!g.pendingManual || g.pendingManual.step) return;
+            g.pendingManual = buildGroupManualState(g.teamNums, g.matches);
+        }
+
+        function ensureFinalManualState() {
+            if (!finalStage.pendingManual || finalStage.pendingManual.step) return;
+            finalStage.pendingManual = buildFinalManualState();
+        }
+
+        function ensurePlayoffManualState() {
+            if (!secondPlayoff.pendingManual || secondPlayoff.pendingManual.step) return;
+            secondPlayoff.pendingManual = buildPlayoffManualState();
+        }
+
+        function renderQuestionPanel({ title, desc, question, options, noteValue, onPick }) {
+            const box = document.createElement('div');
+            box.className = 'p-4 bg-red-50 border-2 border-red-300 rounded-xl mb-4';
+            box.innerHTML = `
+                <h4 class="font-bold text-red-800 text-lg">${title}</h4>
+                <p class="text-sm text-red-700 mt-2">${desc}</p>
+                <p class="font-bold text-gray-900 mt-4">${question}</p>
+                <div class="manual-options flex flex-wrap gap-2 mt-3"></div>
+                <label class="block mt-4 text-sm text-gray-600">加赛说明（可选）</label>
+                <input type="text" class="manual-note w-full border rounded-lg px-3 py-2 mt-1" placeholder="如：点球大战 4:3">`;
+            const noteEl = box.querySelector('.manual-note');
+            if (noteValue) noteEl.value = noteValue;
+            box.querySelector('.manual-options').append(...options.map(num => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'bg-white hover:bg-red-100 active:bg-red-200 border-2 border-red-400 text-red-900 font-bold py-3 px-5 rounded-lg';
+                btn.textContent = teamLabel(num);
+                btn.addEventListener('click', () => onPick(num, noteEl.value.trim()));
+                return btn;
+            }));
+            return box;
+        }
+
+        function finalizeGroupOrder(key, first, second, note) {
+            const g = groups[key];
+            const others = g.teamNums.filter(n => n !== first && n !== second);
+            let tail = rankTeams(others, g.matches, true).order;
+            if (!tail || tail.length !== others.length) {
+                const pool = getFinishedMatches(g.matches).filter(m => m.countsForScore);
+                tail = rankByH2H(others, pool, true);
+            }
+            confirmGroupManual(key, [first, second, ...tail], note);
+        }
+
+        function onGroupManualPick(key, num, note) {
+            const g = groups[key];
+            const pm = g.pendingManual;
+            if (pm.step === 'first') {
+                const pool = getFinishedMatches(g.matches).filter(m => m.countsForScore);
+                const remaining = g.teamNums.filter(n => n !== num);
+                const remStats = remaining.map(n => ({ num: n, pts: getPoints(n, pool, true) }));
+                remStats.sort((a, b) => b.pts - a.pts);
+                const secondPts = remStats[0].pts;
+                const secondCandidates = remStats.filter(s => s.pts === secondPts).map(s => s.num);
+                if (secondCandidates.length > 1 && !canH2HResolve(secondCandidates, pool, true)) {
+                    g.pendingManual = { step: 'second', candidates: secondCandidates, first: num, note };
+                    renderAll();
+                    return;
+                }
+                const second = secondCandidates.length === 1
+                    ? secondCandidates[0]
+                    : rankByH2H(secondCandidates, pool, true)[0];
+                finalizeGroupOrder(key, num, second, note);
+                return;
+            }
+            finalizeGroupOrder(key, pm.first, num, note);
+        }
+
+        function finalizeFinalOrder(first, second, note) {
+            const others = finalStage.teamNums.filter(n => n !== first && n !== second);
+            let tail = rankTeams(others, finalStage.matches, true).order;
+            if (!tail || tail.length !== others.length) {
+                const pool = getFinishedMatches(finalStage.matches).filter(m => m.countsForScore);
+                tail = rankByH2H(others, pool, true);
+            }
+            confirmFinalManual([first, second, ...tail], note);
+        }
+
+        function onFinalManualPick(num, note) {
+            const pm = finalStage.pendingManual;
+            if (pm.step === 'first') {
+                const pool = getFinishedMatches(finalStage.matches).filter(m => m.countsForScore);
+                const remaining = finalStage.teamNums.filter(n => n !== num);
+                const remStats = remaining.map(n => ({ num: n, pts: getPoints(n, pool, true) }));
+                remStats.sort((a, b) => b.pts - a.pts);
+                const secondPts = remStats[0].pts;
+                const secondCandidates = remStats.filter(s => s.pts === secondPts).map(s => s.num);
+                if (secondCandidates.length > 1 && !canH2HResolve(secondCandidates, pool, true)) {
+                    finalStage.pendingManual = { step: 'second', candidates: secondCandidates, first: num, note };
+                    renderAll();
+                    return;
+                }
+                const second = secondCandidates.length === 1
+                    ? secondCandidates[0]
+                    : rankByH2H(secondCandidates, pool, true)[0];
+                finalizeFinalOrder(num, second, note);
+                return;
+            }
+            finalizeFinalOrder(pm.first, num, note);
+        }
+
+        function renderGroupManualPanel(key) {
+            ensureGroupManualState(key);
+            const pm = groups[key].pendingManual;
+            const question = pm.step === 'first'
+                ? `请点击获得${key}组第1名（直通四强）的队伍：`
+                : `请点击获得${key}组第2名（进入加赛区）的队伍：`;
+            return renderQuestionPanel({
+                title: `${key}组 · 同分加赛确认`,
+                desc: '常规赛同分且无法按相互战绩区分，请在加赛后点选结果。第3、4名仍按积分榜自动排序，无需操作。',
+                question,
+                options: pm.candidates,
+                noteValue: pm.note,
+                onPick: (num, note) => onGroupManualPick(key, num, note)
+            });
+        }
+
+        function renderPlayoffManualPanel() {
+            ensurePlayoffManualState();
+            const pm = secondPlayoff.pendingManual;
+            return renderQuestionPanel({
+                title: '小组第2名加赛 · 同分确认',
+                desc: '三个小组第2名循环加赛同分，请在加赛后点选出线队伍。',
+                question: '请点击获得第4个四强名额的队伍：',
+                options: pm.candidates,
+                noteValue: pm.note,
+                onPick: (num, note) => confirmPlayoffManual(num, note)
+            });
+        }
+
+        function renderFinalManualPanel() {
+            ensureFinalManualState();
+            const pm = finalStage.pendingManual;
+            const question = pm.step === 'first'
+                ? '请点击获得冠军（第1名）的队伍：'
+                : '请点击获得第2名的队伍：';
+            return renderQuestionPanel({
+                title: '四强循环 · 同分加赛确认',
+                desc: '四强循环同分且无法按相互战绩区分，请在加赛后点选结果。第3、4名仍按积分榜自动排序，无需操作。',
+                question,
+                options: pm.candidates,
+                noteValue: pm.note,
+                onPick: onFinalManualPick
+            });
         }
 
         function allMatchesDone(matches) {
             return matches.length > 0 && matches.every(m => m.winner !== null);
         }
 
-        /** 综合常规赛 + 加赛得出完整排名 */
-        function getFullRanking(teamNums, regularMatches, tiebreakRounds) {
-            const regular = getFinishedMatches(regularMatches);
-            const tbPool = tiebreakRounds.flat();
-
-            const stats = teamNums.map(num => ({ num, pts: getPoints(num, regular, true) }));
-            stats.sort((a, b) => b.pts - a.pts);
-            const ptGroups = groupByEqual(stats, s => s.pts);
-            const order = [];
-
-            for (const pg of ptGroups) {
-                if (pg.length === 1) {
-                    order.push(pg[0].num);
-                    continue;
-                }
-                const tiedNums = pg.map(x => x.num);
-                const h2hRank = rankTeams(tiedNums, regular, true);
-                if (h2hRank.order) {
-                    order.push(...h2hRank.order);
-                    continue;
-                }
-                if (tbPool.length === 0 || !allMatchesDone(tbPool)) {
-                    return { pendingTiebreak: true, tied: tiedNums };
-                }
-                const tbRank = rankTeams(tiedNums, tbPool, false);
-                if (tbRank.order) {
-                    order.push(...tbRank.order);
-                } else {
-                    return { pendingTiebreak: true, tied: tbRank.tied.length ? tbRank.tied : tiedNums };
-                }
-            }
-            return { order };
+        /** 仅按常规赛/循环赛自动排名；无法分时返回待人工确认 */
+        function getAutoRanking(teamNums, matches, countsForScoreOnly) {
+            const result = rankTeams(teamNums, matches, countsForScoreOnly);
+            if (result.order) return { order: result.order };
+            return { pendingManual: true, tiedNums: result.tied };
         }
 
-        function resolveWithTiebreaks(teamNums, regularMatches, tiebreakRounds, phaseName) {
-            const ranking = getFullRanking(teamNums, regularMatches, tiebreakRounds);
-            if (ranking.order) return { order: ranking.order, tiebreakRounds };
-
-            const newRound = createTiebreakRound(ranking.tied, phaseName + '_tb');
-            tiebreakRounds.push(newRound);
-            return { order: null, tiebreakRounds, pendingTiebreak: true };
+        function confirmGroupManual(key, order, note) {
+            const g = groups[key];
+            g.pendingManual = null;
+            g.manualNote = note;
+            g.rankOrder = order;
+            g.first = order[0];
+            g.second = order[1];
+            g.resolved = true;
+            adminLog(`${key}组加赛确认：第1 ${teamLabel(order[0])}，第2 ${teamLabel(order[1])}${note ? '（' + note + '）' : ''}`);
+            advanceState();
+            renderAll();
         }
 
-        function resolveWithoutScore(teamNums, matches, tiebreakRounds, phaseName) {
-            const tbPool = [...matches, ...tiebreakRounds.flat()];
-            if (!allMatchesDone(matches)) return { winner: null, tiebreakRounds, pendingTiebreak: true };
+        function confirmPlayoffManual(winner, note) {
+            secondPlayoff.pendingManual = null;
+            secondPlayoff.manualNote = note;
+            secondPlayoff.winner = winner;
+            finalStage.teamNums = [groups.A.first, groups.B.first, groups.C.first, winner];
+            finalStage.matches = createRoundRobinMatches(finalStage.teamNums, 'final', true, true);
+            finalStage.pendingManual = null;
+            finalStage.rankOrder = null;
+            finalStage.manualNote = '';
+            phase = 'final';
+            adminLog(`小组第2加赛确认出线：${teamLabel(winner)}${note ? '（' + note + '）' : ''}`);
+            renderAll();
+        }
 
-            for (const tb of tiebreakRounds) {
-                if (!allMatchesDone(tb)) return { winner: null, tiebreakRounds, pendingTiebreak: true };
-            }
-
-            const result = rankTeams(teamNums, tbPool, false);
-            if (result.order) return { winner: result.order[0], tiebreakRounds };
-
-            const newRound = createTiebreakRound(result.tied, phaseName + '_tb');
-            tiebreakRounds.push(newRound);
-            return { winner: null, tiebreakRounds, pendingTiebreak: true };
+        function confirmFinalManual(order, note) {
+            finalStage.pendingManual = null;
+            finalStage.manualNote = note;
+            finalStage.rankOrder = order;
+            phase = 'complete';
+            adminLog(`四强加赛确认排名：${order.map((n, i) => `${i + 1}.${teamLabel(n)}`).join(' ')}${note ? '（' + note + '）' : ''}`);
+            renderAll();
         }
 
         function recordWin(match, winner, wCount, lCount) {
@@ -533,8 +1007,14 @@
             match.loseCount = lCount;
 
             if (match.countsForScore) {
-                if (match.phase.startsWith('group')) teamsMap[winner].prelimMatchPts += 1;
-                else if (match.phase === 'final') teamsMap[winner].finalMatchPts += 1;
+                const loser = match.team1 === winner ? match.team2 : match.team1;
+                if (match.phase.startsWith('group')) {
+                    teamsMap[winner].prelimMatchPts += wCount;
+                    teamsMap[loser].prelimMatchPts += lCount;
+                } else if (match.phase === 'final') {
+                    teamsMap[winner].finalMatchPts += wCount;
+                    teamsMap[loser].finalMatchPts += lCount;
+                }
             }
 
             advanceState();
@@ -542,8 +1022,7 @@
         }
 
         function groupReady(g) {
-            if (!allMatchesDone(g.matches)) return false;
-            return g.tiebreakRounds.every(tb => allMatchesDone(tb));
+            return allMatchesDone(g.matches);
         }
 
         function advanceState() {
@@ -564,22 +1043,26 @@
             for (const key of GROUP_KEYS) {
                 const g = groups[key];
                 if (g.resolved || !groupReady(g)) continue;
+                if (g.pendingManual) return;
 
-                const res = resolveWithTiebreaks(g.teamNums, g.matches, g.tiebreakRounds, 'group_' + key);
-                g.tiebreakRounds = res.tiebreakRounds;
-                if (res.pendingTiebreak) return;
-
-                g.rankOrder = res.order;
-                g.first = res.order[0];
-                g.second = res.order[1];
-                g.resolved = true;
+                const res = getAutoRanking(g.teamNums, g.matches, true);
+                if (res.order) {
+                    g.rankOrder = res.order;
+                    g.first = res.order[0];
+                    g.second = res.order[1];
+                    g.resolved = true;
+                } else {
+                    g.pendingManual = buildGroupManualState(g.teamNums, g.matches);
+                    return;
+                }
             }
 
             if (GROUP_KEYS.every(k => groups[k].resolved)) {
                 secondPlayoff.teamNums = GROUP_KEYS.map(k => groups[k].second);
-                secondPlayoff.matches = createRoundRobinMatches(secondPlayoff.teamNums, 'playoff', false);
-                secondPlayoff.tiebreakRounds = [];
+                secondPlayoff.matches = createRoundRobinMatches(secondPlayoff.teamNums, 'playoff', false, true);
+                secondPlayoff.pendingManual = null;
                 secondPlayoff.winner = null;
+                secondPlayoff.manualNote = '';
                 phase = 'playoff';
             }
         }
@@ -587,58 +1070,62 @@
         function checkPlayoffComplete() {
             if (phase !== 'playoff') return;
             if (!allMatchesDone(secondPlayoff.matches)) return;
-            if (!secondPlayoff.tiebreakRounds.every(tb => allMatchesDone(tb))) return;
+            if (secondPlayoff.winner) return;
+            if (secondPlayoff.pendingManual) return;
 
-            const res = resolveWithoutScore(
-                secondPlayoff.teamNums,
-                secondPlayoff.matches,
-                secondPlayoff.tiebreakRounds,
-                'playoff'
-            );
-            secondPlayoff.tiebreakRounds = res.tiebreakRounds;
-            if (res.pendingTiebreak) return;
-
-            secondPlayoff.winner = res.winner;
-            finalStage.teamNums = [groups.A.first, groups.B.first, groups.C.first, res.winner];
-            finalStage.matches = createRoundRobinMatches(finalStage.teamNums, 'final', true);
-            finalStage.tiebreakRounds = [];
-            finalStage.rankOrder = null;
-            phase = 'final';
+            const res = getAutoRanking(secondPlayoff.teamNums, secondPlayoff.matches, false);
+            if (res.order) {
+                secondPlayoff.winner = res.order[0];
+                finalStage.teamNums = [groups.A.first, groups.B.first, groups.C.first, res.order[0]];
+                finalStage.matches = createRoundRobinMatches(finalStage.teamNums, 'final', true, true);
+                finalStage.pendingManual = null;
+                finalStage.rankOrder = null;
+                finalStage.manualNote = '';
+                phase = 'final';
+            } else {
+                secondPlayoff.pendingManual = buildPlayoffManualState();
+            }
         }
 
         function checkFinalComplete() {
             if (phase !== 'final') return;
             if (!allMatchesDone(finalStage.matches)) return;
-            if (!finalStage.tiebreakRounds.every(tb => allMatchesDone(tb))) return;
+            if (finalStage.pendingManual) return;
 
-            const res = resolveWithTiebreaks(
-                finalStage.teamNums,
-                finalStage.matches,
-                finalStage.tiebreakRounds,
-                'final'
-            );
-            finalStage.tiebreakRounds = res.tiebreakRounds;
-            if (res.pendingTiebreak) return;
-
-            finalStage.rankOrder = res.order;
-            phase = 'complete';
+            const res = getAutoRanking(finalStage.teamNums, finalStage.matches, true);
+            if (res.order) {
+                finalStage.rankOrder = res.order;
+                phase = 'complete';
+            } else {
+                finalStage.pendingManual = buildFinalManualState();
+            }
         }
 
         function renderTeamList() {
             const el = document.getElementById('teamList');
+            el.className = 'grid grid-cols-1 md:grid-cols-3 gap-4';
             el.innerHTML = '';
-            Object.keys(teamsMap).map(Number).sort((a, b) => a - b).forEach(num => {
-                const t = teamsMap[num];
-                const div = document.createElement('div');
-                div.className = 'p-3 rounded-lg border bg-blue-50 border-blue-200 flex justify-between items-center';
-                div.innerHTML = `
-                    <span class="font-medium">${t.name} <span class="text-gray-500 text-sm">(${num}号 · ${t.group}组)</span></span>
-                    <span class="text-sm whitespace-nowrap ml-2 text-right">
-                        <span class="text-blue-700">预选 ${scoreDetail(t, 'prelim')}</span>
-                        <span class="text-gray-400 mx-1">|</span>
-                        <span class="text-orange-700">决赛 ${scoreDetail(t, 'final')}</span>
-                    </span>`;
-                el.appendChild(div);
+            GROUP_KEYS.forEach(key => {
+                const col = document.createElement('div');
+                col.className = 'space-y-2';
+                const heading = document.createElement('h3');
+                heading.className = 'font-bold text-gray-700 text-center py-2 px-3 rounded-lg bg-gray-100 border border-gray-200';
+                heading.textContent = key + '组';
+                col.appendChild(heading);
+                (groups[key]?.teamNums || []).forEach(num => {
+                    const t = teamsMap[num];
+                    const div = document.createElement('div');
+                    div.className = 'p-3 rounded-lg border bg-blue-50 border-blue-200';
+                    div.innerHTML = `
+                        <div class="font-medium">${t.name} <span class="text-gray-500 text-sm">(${num}号)</span></div>
+                        <div class="text-sm mt-1 text-right">
+                            <span class="text-blue-700">预选 ${scoreDetail(t, 'prelim')}</span>
+                            <span class="text-gray-400 mx-1">|</span>
+                            <span class="text-orange-700">决赛 ${scoreDetail(t, 'final')}</span>
+                        </div>`;
+                    col.appendChild(div);
+                });
+                el.appendChild(col);
             });
         }
 
@@ -647,15 +1134,17 @@
             card.className = 'match-card bg-white border border-gray-200 rounded-xl shadow-sm p-3';
             const t1 = teamLabel(match.team1);
             const t2 = teamLabel(match.team2);
-            const tag = match.isTiebreak ? '<div class="text-xs text-red-600 font-bold mb-1 text-center">加赛（不计分）</div>' : '';
+            const tag = '';
             const scoreTag = match.countsForScore
-                ? (match.phase === 'final' ? '' : '<div class="text-xs text-gray-500 text-center">计入选积分</div>')
+                ? '<div class="text-xs text-gray-500 text-center">按小局计分</div>'
                 : '<div class="text-xs text-gray-500 text-center">不计分</div>';
 
             if (match.winner !== null) {
+                const t1Games = match.winner === match.team1 ? match.winCount : match.loseCount;
+                const t2Games = match.winner === match.team2 ? match.winCount : match.loseCount;
                 card.innerHTML = tag + scoreTag + `
                     <div class="${match.winner === match.team1 ? 'winner-text' : 'loser-text'}">${t1}</div>
-                    <div class="text-center text-gray-400 text-sm my-1">${match.winCount}:${match.loseCount}</div>
+                    <div class="text-center text-gray-400 text-sm my-1">${t1Games}:${t2Games}</div>
                     <div class="${match.winner === match.team2 ? 'winner-text' : 'loser-text'}">${t2}</div>`;
                 return card;
             }
@@ -680,50 +1169,46 @@
             return card;
         }
 
-        function renderMatchSection(title, titleClass, matches, tiebreakRounds, handler) {
+        function renderMatchSection(title, titleClass, matches, handler) {
             const section = document.createElement('div');
             section.className = 'bracket-round';
             section.innerHTML = `<h3 class="text-center font-bold text-lg py-2 px-4 rounded-lg border ${titleClass}">${title}</h3>`;
             const wrap = document.createElement('div');
             wrap.className = 'matches-wrapper';
-
             matches.forEach(m => {
                 wrap.appendChild(renderMatchCard(m, (w, wc, lc) => handler(m, w, wc, lc)));
             });
-            tiebreakRounds.forEach(round => {
-                round.forEach(m => {
-                    wrap.appendChild(renderMatchCard(m, (w, wc, lc) => handler(m, w, wc, lc)));
-                });
-            });
-
             section.appendChild(wrap);
             return section;
         }
 
-        function renderStandings(title, teamNums, matches, tiebreakRounds, countsForScore) {
+        function renderStandings(title, teamNums, matches, countsForScore, pendingManual) {
             const div = document.createElement('div');
             div.className = 'text-sm text-gray-700 mb-2 p-3 bg-gray-50 rounded-lg';
 
-            if (countsForScore) {
-                const ranking = getFullRanking(teamNums, matches, tiebreakRounds);
-                if (ranking.order) {
-                    div.innerHTML = `<strong>${title}：</strong> ` + ranking.order.map((n, i) => {
-                        const pts = getPoints(n, matches, true);
-                        return `${i + 1}. ${teamLabel(n)} (${pts}分)`;
+            if (pendingManual) {
+                const hint = pendingManual.step === 'first' ? '请先点选第1名'
+                    : pendingManual.step === 'second' ? '请先点选第2名'
+                    : pendingManual.step === 'winner' ? '请先点选出线队伍'
+                    : '待确认';
+                div.innerHTML = `<strong>${title}：</strong> <span class="text-red-600 font-bold">同分加赛 · ${hint}</span>`;
+                return div;
+            }
+
+            const res = getAutoRanking(teamNums, matches, countsForScore);
+            if (res.order) {
+                if (countsForScore) {
+                    div.innerHTML = `<strong>${title}：</strong> ` + res.order.map((n, i) => {
+                        const pts = getGamePoints(n, matches, true);
+                        return `${i + 1}. ${teamLabel(n)} (${pts}小局分)`;
                     }).join(' · ');
                 } else {
-                    div.innerHTML = `<strong>${title}：</strong> 同分待加赛 → ${ranking.tied.map(teamLabel).join('、')}`;
+                    div.innerHTML = `<strong>${title}：</strong> ` + res.order.map((n, i) =>
+                        `${i + 1}. ${teamLabel(n)} (${getPoints(n, matches, false)}胜)`
+                    ).join(' · ');
                 }
             } else {
-                const all = [...matches, ...tiebreakRounds.flat()];
-                const res = rankTeams(teamNums, all, false);
-                if (res.order) {
-                    div.innerHTML = `<strong>${title}：</strong> ` + res.order.map((n, i) =>
-                        `${i + 1}. ${teamLabel(n)} (${getPoints(n, all, false)}胜)`
-                    ).join(' · ');
-                } else {
-                    div.innerHTML = `<strong>${title}：</strong> 同分待加赛 → ${res.tied.map(teamLabel).join('、')}`;
-                }
+                div.innerHTML = `<strong>${title}：</strong> <span class="text-red-600">同分待人工加赛确认</span>`;
             }
             return div;
         }
@@ -746,18 +1231,21 @@
                     const g = groups[key];
                     const section = document.createElement('div');
                     section.className = 'mb-4';
-                    section.appendChild(renderStandings(`${key}组`, g.teamNums, g.matches, g.tiebreakRounds, true));
+                    section.appendChild(renderStandings(`${key}组`, g.teamNums, g.matches, true, g.pendingManual));
                     section.appendChild(renderMatchSection(
                         `${key}组循环赛`,
                         'bg-blue-50 border-blue-200 text-blue-800',
                         g.matches,
-                        g.tiebreakRounds,
                         (match, w, wc, lc) => recordWin(match, w, wc, lc)
                     ));
+                    if (g.pendingManual) {
+                        section.appendChild(renderGroupManualPanel(key));
+                    }
                     if (g.resolved) {
                         const badge = document.createElement('div');
                         badge.className = 'text-sm text-green-700 font-bold mt-1';
-                        badge.textContent = `✅ ${key}组：第1 ${teamLabel(g.first)} → 四强 | 第2 ${teamLabel(g.second)} → 加赛区`;
+                        const note = g.manualNote ? `（加赛：${g.manualNote}）` : '';
+                        badge.textContent = `✅ ${key}组：第1 ${teamLabel(g.first)} → 四强 | 第2 ${teamLabel(g.second)} → 加赛区${note}`;
                         section.appendChild(badge);
                     }
                     container.appendChild(section);
@@ -767,18 +1255,21 @@
             if (phase === 'playoff' || phase === 'final' || phase === 'complete') {
                 const ps = document.createElement('div');
                 ps.className = 'mb-4';
-                ps.appendChild(renderStandings('小组第2加赛', secondPlayoff.teamNums, secondPlayoff.matches, secondPlayoff.tiebreakRounds, false));
+                ps.appendChild(renderStandings('小组第2加赛', secondPlayoff.teamNums, secondPlayoff.matches, false, secondPlayoff.pendingManual));
                 ps.appendChild(renderMatchSection(
                     '三个小组第2名循环加赛',
                     'bg-yellow-50 border-yellow-200 text-yellow-800',
                     secondPlayoff.matches,
-                    secondPlayoff.tiebreakRounds,
                     (match, w, wc, lc) => recordWin(match, w, wc, lc)
                 ));
+                if (secondPlayoff.pendingManual) {
+                    ps.appendChild(renderPlayoffManualPanel());
+                }
                 if (secondPlayoff.winner) {
                     const b = document.createElement('div');
                     b.className = 'text-sm text-green-700 font-bold';
-                    b.textContent = `✅ 加赛胜者 ${teamLabel(secondPlayoff.winner)} → 四强`;
+                    const note = secondPlayoff.manualNote ? `（加赛：${secondPlayoff.manualNote}）` : '';
+                    b.textContent = `✅ 加赛出线 ${teamLabel(secondPlayoff.winner)} → 四强${note}`;
                     ps.appendChild(b);
                 }
                 container.appendChild(ps);
@@ -787,14 +1278,16 @@
             if (phase === 'final' || phase === 'complete') {
                 const fs = document.createElement('div');
                 fs.className = 'mb-4';
-                fs.appendChild(renderStandings('四强循环', finalStage.teamNums, finalStage.matches, finalStage.tiebreakRounds, true));
+                fs.appendChild(renderStandings('四强循环', finalStage.teamNums, finalStage.matches, true, finalStage.pendingManual));
                 fs.appendChild(renderMatchSection(
                     '四强循环赛 BO3',
                     'bg-purple-50 border-purple-200 text-purple-800',
                     finalStage.matches,
-                    finalStage.tiebreakRounds,
                     (match, w, wc, lc) => recordWin(match, w, wc, lc)
                 ));
+                if (finalStage.pendingManual) {
+                    fs.appendChild(renderFinalManualPanel());
+                }
                 container.appendChild(fs);
             }
 
@@ -816,6 +1309,7 @@
                 document.getElementById('finalRankSection').classList.add('hidden');
             }
             renderAdminPanel();
+            saveState();
         }
 
         function generateTournament(seed) {
@@ -825,26 +1319,33 @@
             }
             globalSeed = stringToSeed(seed);
 
-            const nums = shuffleArray(Array.from({ length: 12 }, (_, i) => i + 1), globalSeed);
+            // 先洗牌队伍顺序，再按序分入 A/B/C 三组（每组 4 队）
+            const teamOrder = shuffleArray(Array.from({ length: 12 }, (_, i) => i), globalSeed);
+            // 号码 1-12 独立洗牌，与组别解耦
+            const numOrder = shuffleArray(Array.from({ length: 12 }, (_, i) => i + 1), stringToSeed(seed + '|num'));
+
             teamsMap = {};
-            nums.forEach((num, idx) => {
+            for (let i = 0; i < 12; i++) {
+                const num = numOrder[i];
+                const teamIdx = teamOrder[i];
                 teamsMap[num] = {
-                    name: TEAM_NAMES[idx],
+                    name: TEAM_NAMES[teamIdx],
                     prelimMatchPts: 0,
                     finalMatchPts: 0,
                     prelimBonus: 0,
                     finalBonus: 0,
-                    group: GROUP_KEYS[Math.floor(idx / 4)]
+                    group: GROUP_KEYS[Math.floor(i / 4)]
                 };
-            });
+            }
 
             groups = {};
             GROUP_KEYS.forEach((key, gi) => {
-                const teamNums = nums.slice(gi * 4, gi * 4 + 4).sort((a, b) => a - b);
+                const teamNums = numOrder.slice(gi * 4, gi * 4 + 4).sort((a, b) => a - b);
                 groups[key] = {
                     teamNums,
-                    matches: createRoundRobinMatches(teamNums, 'group_' + key, true),
-                    tiebreakRounds: [],
+                    matches: createRoundRobinMatches(teamNums, 'group_' + key, true, true),
+                    pendingManual: null,
+                    manualNote: '',
                     resolved: false,
                     first: null,
                     second: null,
@@ -852,13 +1353,11 @@
                 };
             });
 
-            secondPlayoff = { teamNums: [], matches: [], tiebreakRounds: [], winner: null };
-            finalStage = { teamNums: [], matches: [], tiebreakRounds: [], rankOrder: null };
+            secondPlayoff = { teamNums: [], matches: [], winner: null, pendingManual: null, manualNote: '' };
+            finalStage = { teamNums: [], matches: [], rankOrder: null, pendingManual: null, manualNote: '' };
             phase = 'group';
 
-            document.getElementById('teamListSection').classList.remove('hidden');
-            document.getElementById('tournamentSection').classList.remove('hidden');
-            document.getElementById('adminSection').classList.remove('hidden');
+            showTournamentUI();
             renderAll();
         }
 
@@ -876,18 +1375,35 @@
                 renderAll();
             });
             document.getElementById('adminClearBonusBtn').addEventListener('click', clearAllBonus);
+            document.getElementById('adminResetMatchesBtn').addEventListener('click', () => resetAllMatchResults(false));
+            document.getElementById('adminResetMatchesBonusBtn').addEventListener('click', () => resetAllMatchResults(true));
+            document.getElementById('adminClearSaveBtn').addEventListener('click', () => {
+                if (!confirm('仅删除浏览器本地存档文件？当前页面进度保留，关闭浏览器后不会自动恢复。')) return;
+                clearSavedState();
+                adminLog('已清除本地存档（当前进度仍在内存中）');
+            });
+            document.getElementById('adminFullResetBtn').addEventListener('click', fullReset);
+            document.getElementById('manualSaveBtn').addEventListener('click', () => {
+                saveState();
+                adminLog('已手动保存到本地');
+            });
         }
 
-        document.getElementById('generateBtn').addEventListener('click', () => {
-            generateTournament(document.getElementById('hashSeed').value);
-        });
+        document.getElementById('generateBtn').addEventListener('click', requestGenerate);
         document.getElementById('hashSeed').addEventListener('keypress', e => {
-            if (e.key === 'Enter') document.getElementById('generateBtn').click();
+            if (e.key === 'Enter') requestGenerate();
         });
         window.addEventListener('load', () => {
-            document.getElementById('hashSeed').value = Date.now().toString() + Math.random().toString(36).slice(2, 8);
             renderRosterStatic();
             bindAdminEvents();
+            if (loadState()) {
+                renderAll();
+                updateSaveStatus(true);
+                adminLog('已从浏览器本地恢复上次进度');
+            } else {
+                document.getElementById('hashSeed').value = Date.now().toString() + Math.random().toString(36).slice(2, 8);
+                updateSaveStatus(false);
+            }
         });
     </script>
 </body>
