@@ -200,7 +200,7 @@
                 <li>12支队伍随机分为3个小组，每组4队循环赛，BO3按<b>小局</b>计分（赢1小局得1分，如2:0得2分:0分，2:1得2分:1分）</li>
                 <li>小组对阵顺序优化，尽量避免同一队伍连续出战</li>
                 <li>小组积分第1直接进四强；3个小组第2循环加赛（不计分），胜者占第4个四强名额</li>
-                <li>同分参照世界杯规则：相互战绩 → 相互净胜小局；仍无法区分时由<b>场内人工加赛</b>（点球等均可），在本页面确认出线/排名即可</li>
+                <li>积分榜<b>同分一律</b>由<b>场内人工加赛</b>确认（点球等均可），在本页面点选出线/排名即可，不按相互战绩自动区分</li>
                 <li>四强阶段积分清零重新计；6场循环BO3，同样按小局计分，按积分排1～4名，同分规则同上</li>
                 <li>预选赛积分保留用于赛后兑换奖励；办赛方可通过容错工具添加<b>补偿分</b>（不影响晋级，仅影响兑奖显示）</li>
                 <li>进度自动保存到浏览器本地，关闭页面后再次打开可恢复；可在容错工具中清理存档或重置赛果</li>
@@ -674,37 +674,6 @@
             return matches.filter(m => m.winner === num && !m.countsForScore).length;
         }
 
-        function getHeadToHeadPoints(num, tiedNums, matches, countsForScoreOnly) {
-            const h2h = matches.filter(m => {
-                if (m.winner === null) return false;
-                if (countsForScoreOnly ? !m.countsForScore : m.countsForScore) return false;
-                return tiedNums.includes(m.team1) && tiedNums.includes(m.team2);
-            });
-            if (countsForScoreOnly) {
-                return getGamePoints(num, h2h, true);
-            }
-            return h2h.filter(m => m.winner === num).length;
-        }
-
-        /** 相互对局净胜小局（赢的小局 − 输的小局） */
-        function getGameMargin(num, tiedNums, matches, countsForScoreOnly) {
-            let won = 0, lost = 0;
-            matches.forEach(m => {
-                if (m.winner === null) return;
-                if (countsForScoreOnly ? !m.countsForScore : m.countsForScore) return;
-                if (!tiedNums.includes(m.team1) || !tiedNums.includes(m.team2)) return;
-                if (m.team1 !== num && m.team2 !== num) return;
-                if (m.winner === num) {
-                    won += m.winCount || 0;
-                    lost += m.loseCount || 0;
-                } else {
-                    won += m.loseCount || 0;
-                    lost += m.winCount || 0;
-                }
-            });
-            return won - lost;
-        }
-
         function groupByEqual(arr, keyFn) {
             const groups = [];
             let current = null;
@@ -720,7 +689,7 @@
             return groups.map(g => g.items);
         }
 
-        /** 世界杯式排名：小局积分 → 相互小局积分 → 相互净胜小局；仍平则加赛 */
+        /** 按积分榜排名；同分一律待人工确认 */
         function rankTeams(teamNums, matches, countsForScoreOnly) {
             const pool = getFinishedMatches(matches).filter(m =>
                 countsForScoreOnly ? m.countsForScore : !m.countsForScore
@@ -744,26 +713,7 @@
                         order.push(ptGroup[0].num);
                         continue;
                     }
-                    const tiedNums = ptGroup.map(s => s.num);
-                    const h2h = tiedNums.map(num => ({
-                        num,
-                        h2hPts: getHeadToHeadPoints(num, tiedNums, pool, countsForScoreOnly),
-                        h2hMargin: getGameMargin(num, tiedNums, pool, countsForScoreOnly)
-                    }));
-                    h2h.sort((a, b) => b.h2hPts - a.h2hPts || b.h2hMargin - a.h2hMargin);
-
-                    const h2hGroups = groupByEqual(h2h, s => `${s.h2hPts}-${s.h2hMargin}`);
-                    let allResolved = true;
-                    for (const hg of h2hGroups) {
-                        if (hg.length === 1) order.push(hg[0].num);
-                        else {
-                            allResolved = false;
-                            tiedForPlayoff.push(...hg.map(x => x.num));
-                        }
-                    }
-                    if (!allResolved && h2hGroups.length === 1) {
-                        tiedForPlayoff = tiedNums;
-                    }
+                    tiedForPlayoff.push(...ptGroup.map(s => s.num));
                 }
 
                 tiedForPlayoff = [...new Set(tiedForPlayoff)];
@@ -776,20 +726,10 @@
             return resolveList(teamNums);
         }
 
-        function canH2HResolve(nums, pool, countsForScore) {
-            if (nums.length <= 1) return true;
-            const keys = nums.map(num =>
-                `${getHeadToHeadPoints(num, nums, pool, countsForScore)}-${getGameMargin(num, nums, pool, countsForScore)}`
-            );
-            return new Set(keys).size === keys.length;
-        }
-
-        function rankByH2H(nums, pool, countsForScore) {
-            return nums.map(num => ({
-                num,
-                h2hPts: getHeadToHeadPoints(num, nums, pool, countsForScore),
-                h2hMargin: getGameMargin(num, nums, pool, countsForScore)
-            })).sort((a, b) => b.h2hPts - a.h2hPts || b.h2hMargin - a.h2hMargin).map(x => x.num);
+        function rankTailOrder(nums, matches, countsForScore) {
+            const res = rankTeams(nums, matches, countsForScore);
+            if (res.order) return res.order;
+            return [...nums].sort((a, b) => a - b);
         }
 
         function buildGroupManualState(teamNums, matches) {
@@ -799,20 +739,18 @@
             const topPts = stats[0].pts;
             const firstCandidates = stats.filter(s => s.pts === topPts).map(s => s.num);
 
-            if (firstCandidates.length > 1 && !canH2HResolve(firstCandidates, pool, true)) {
+            if (firstCandidates.length > 1) {
                 return { step: 'first', candidates: firstCandidates, first: null, note: '' };
             }
 
-            const first = firstCandidates.length === 1
-                ? firstCandidates[0]
-                : rankByH2H(firstCandidates, pool, true)[0];
+            const first = firstCandidates[0];
             const remaining = teamNums.filter(n => n !== first);
             const remStats = remaining.map(num => ({ num, pts: getPoints(num, pool, true) }));
             remStats.sort((a, b) => b.pts - a.pts);
             const secondPts = remStats[0].pts;
             const secondCandidates = remStats.filter(s => s.pts === secondPts).map(s => s.num);
 
-            if (secondCandidates.length > 1 && !canH2HResolve(secondCandidates, pool, true)) {
+            if (secondCandidates.length > 1) {
                 return { step: 'second', candidates: secondCandidates, first, note: '' };
             }
 
@@ -838,20 +776,18 @@
             const topPts = stats[0].pts;
             const firstCandidates = stats.filter(s => s.pts === topPts).map(s => s.num);
 
-            if (firstCandidates.length > 1 && !canH2HResolve(firstCandidates, pool, true)) {
+            if (firstCandidates.length > 1) {
                 return { step: 'first', candidates: firstCandidates, first: null, note: '' };
             }
 
-            const first = firstCandidates.length === 1
-                ? firstCandidates[0]
-                : rankByH2H(firstCandidates, pool, true)[0];
+            const first = firstCandidates[0];
             const remaining = teamNums.filter(n => n !== first);
             const remStats = remaining.map(num => ({ num, pts: getPoints(num, pool, true) }));
             remStats.sort((a, b) => b.pts - a.pts);
             const secondPts = remStats[0].pts;
             const secondCandidates = remStats.filter(s => s.pts === secondPts).map(s => s.num);
 
-            if (secondCandidates.length > 1 && !canH2HResolve(secondCandidates, pool, true)) {
+            if (secondCandidates.length > 1) {
                 return { step: 'second', candidates: secondCandidates, first, note: '' };
             }
 
@@ -901,11 +837,7 @@
         function finalizeGroupOrder(key, first, second, note) {
             const g = groups[key];
             const others = g.teamNums.filter(n => n !== first && n !== second);
-            let tail = rankTeams(others, g.matches, true).order;
-            if (!tail || tail.length !== others.length) {
-                const pool = getFinishedMatches(g.matches).filter(m => m.countsForScore);
-                tail = rankByH2H(others, pool, true);
-            }
+            const tail = rankTailOrder(others, g.matches, true);
             confirmGroupManual(key, [first, second, ...tail], note);
         }
 
@@ -919,15 +851,12 @@
                 remStats.sort((a, b) => b.pts - a.pts);
                 const secondPts = remStats[0].pts;
                 const secondCandidates = remStats.filter(s => s.pts === secondPts).map(s => s.num);
-                if (secondCandidates.length > 1 && !canH2HResolve(secondCandidates, pool, true)) {
+                if (secondCandidates.length > 1) {
                     g.pendingManual = { step: 'second', candidates: secondCandidates, first: num, note };
                     renderAll();
                     return;
                 }
-                const second = secondCandidates.length === 1
-                    ? secondCandidates[0]
-                    : rankByH2H(secondCandidates, pool, true)[0];
-                finalizeGroupOrder(key, num, second, note);
+                finalizeGroupOrder(key, num, secondCandidates[0], note);
                 return;
             }
             finalizeGroupOrder(key, pm.first, num, note);
@@ -935,11 +864,7 @@
 
         function finalizeFinalOrder(first, second, note) {
             const others = finalStage.teamNums.filter(n => n !== first && n !== second);
-            let tail = rankTeams(others, finalStage.matches, true).order;
-            if (!tail || tail.length !== others.length) {
-                const pool = getFinishedMatches(finalStage.matches).filter(m => m.countsForScore);
-                tail = rankByH2H(others, pool, true);
-            }
+            const tail = rankTailOrder(others, finalStage.matches, true);
             confirmFinalManual([first, second, ...tail], note);
         }
 
@@ -952,15 +877,12 @@
                 remStats.sort((a, b) => b.pts - a.pts);
                 const secondPts = remStats[0].pts;
                 const secondCandidates = remStats.filter(s => s.pts === secondPts).map(s => s.num);
-                if (secondCandidates.length > 1 && !canH2HResolve(secondCandidates, pool, true)) {
+                if (secondCandidates.length > 1) {
                     finalStage.pendingManual = { step: 'second', candidates: secondCandidates, first: num, note };
                     renderAll();
                     return;
                 }
-                const second = secondCandidates.length === 1
-                    ? secondCandidates[0]
-                    : rankByH2H(secondCandidates, pool, true)[0];
-                finalizeFinalOrder(num, second, note);
+                finalizeFinalOrder(num, secondCandidates[0], note);
                 return;
             }
             finalizeFinalOrder(pm.first, num, note);
@@ -974,7 +896,7 @@
                 : `请点击获得${key}组第2名（进入加赛区）的队伍：`;
             return renderQuestionPanel({
                 title: `${key}组 · 同分加赛确认`,
-                desc: '常规赛同分且无法按相互战绩区分，请在加赛后点选结果。第3、4名仍按积分榜自动排序，无需操作。',
+                desc: '积分榜同分需人工加赛确认，请在加赛后点选结果。第3、4名按剩余队伍积分榜自动排序，无需操作。',
                 question,
                 options: pm.candidates,
                 noteValue: pm.note,
@@ -1003,7 +925,7 @@
                 : '请点击获得第2名的队伍：';
             return renderQuestionPanel({
                 title: '四强循环 · 同分加赛确认',
-                desc: '四强循环同分且无法按相互战绩区分，请在加赛后点选结果。第3、4名仍按积分榜自动排序，无需操作。',
+                desc: '积分榜同分需人工加赛确认，请在加赛后点选结果。第3、4名按剩余队伍积分榜自动排序，无需操作。',
                 question,
                 options: pm.candidates,
                 noteValue: pm.note,
