@@ -15,7 +15,13 @@ window.LOTTERY_CONFIG = {
     { "name": "光与影", "count": 1 },
     { "name": "天才", "count": 1 },
     { "name": "风帆", "count": 10 },
-    { "name": "秋暮", "count": 2 }
+    { "name": "秋暮", "count": 2 },
+    { "name": "豪哥", "count": 12 },
+    { "name": "皓月", "count": 1 },
+    { "name": "吃亏是福", "count": 1 },
+    { "name": "佛爷", "count": 1 },
+    { "name": "大冰箱", "count": 10 },
+    { "name": "阿炮", "count": 1 }
   ],
   "prizes": [
     { "tier": "一等奖", "name": "狮子", "qty": 5 },
