@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>签号抽奖</title>
+    <script src="lottery-config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body::before {
@@ -18,7 +19,7 @@
     <div class="max-w-3xl mx-auto">
         <div class="text-center mb-8">
             <h1 id="pageTitle" class="text-3xl md:text-4xl font-bold text-indigo-900 mb-2">🎁 签号抽奖</h1>
-            <p class="text-gray-600 text-sm">相同随机数 → 相同结果 · 数据来自 lottery-data.json</p>
+            <p class="text-gray-600 text-sm">相同随机数 → 相同结果</p>
         </div>
 
         <div id="loadError" class="hidden mb-6 bg-red-50 border border-red-200 text-red-800 rounded-xl p-4 text-sm"></div>
@@ -52,13 +53,14 @@
         <!-- 3. 奖池 / 全部签号 -->
         <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-10 section-card">
             <h2 class="text-lg font-bold text-gray-800 mb-2">📋 奖池情况</h2>
-            <p class="text-sm text-gray-500 mb-4" id="poolSummary">正在加载 lottery-data.json …</p>
+            <p class="text-sm text-gray-500 mb-4" id="poolSummary">正在加载配置 …</p>
             <div id="poolList" class="space-y-4"></div>
         </div>
     </div>
 
     <script>
         const DATA_FILE = 'lottery-data.json';
+        const CONFIG_JS = 'lottery-config.js';
         const TIER_COLORS = {
             '特等奖': 'text-red-600',
             '一等奖': 'text-orange-600',
@@ -237,10 +239,24 @@
             return lines.join('\n');
         }
 
+        function applyConfig(raw) {
+            const cfg = normalizeConfig(raw);
+            ROSTER = cfg.roster;
+            PRIZES = cfg.prizes;
+            document.getElementById('pageTitle').textContent = '🎁 ' + cfg.title;
+            document.title = cfg.title;
+            document.getElementById('loadError').classList.add('hidden');
+            renderPool();
+            enableDraw();
+        }
+
         function showLoadError(msg) {
             const el = document.getElementById('loadError');
             el.classList.remove('hidden');
-            el.innerHTML = `<strong>无法加载 ${DATA_FILE}</strong><br>${esc(msg)}<br><span class="text-gray-600">请用 lottery-editor.exe 生成配置文件，并与 lottery.html 放在同一目录；通过 http 访问（如 GitHub Pages 或 python -m http.server）。</span>`;
+            const localHint = location.protocol === 'file:'
+                ? '当前是本地文件打开，请确保同目录有 lottery-config.js；或用 GitHub Pages 地址访问。'
+                : '请确认仓库里已提交 lottery-config.js 和 lottery-data.json。';
+            el.innerHTML = `<strong>无法加载抽奖配置</strong><br>${esc(msg)}<br><span class="text-gray-600">${localHint}</span>`;
             document.getElementById('poolSummary').textContent = '配置未加载';
         }
 
@@ -250,19 +266,21 @@
         }
 
         async function loadConfig() {
+            if (window.LOTTERY_CONFIG) {
+                try {
+                    applyConfig(window.LOTTERY_CONFIG);
+                    return;
+                } catch (e) {
+                    showLoadError(e.message || String(e));
+                    return;
+                }
+            }
             try {
                 const res = await fetch(DATA_FILE, { cache: 'no-store' });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const raw = await res.json();
-                const cfg = normalizeConfig(raw);
-                ROSTER = cfg.roster;
-                PRIZES = cfg.prizes;
-                document.getElementById('pageTitle').textContent = '🎁 ' + cfg.title;
-                document.title = cfg.title;
-                renderPool();
-                enableDraw();
+                if (!res.ok) throw new Error(`${DATA_FILE} HTTP ${res.status}`);
+                applyConfig(await res.json());
             } catch (e) {
-                showLoadError(e.message || String(e));
+                showLoadError(`${e.message || e}（文件名是 lottery-data.json，中间是短横线 - 不是下划线 _）`);
             }
         }
 
